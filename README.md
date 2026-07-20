@@ -1,5 +1,12 @@
 # NS Creative Studio
 
+[![Deploy to GitHub Pages](https://github.com/Kaizen-7/ns-creative-studio/actions/workflows/pages.yml/badge.svg)](https://github.com/Kaizen-7/ns-creative-studio/actions/workflows/pages.yml)
+[![Live](https://img.shields.io/badge/live-kaizen--7.github.io-B0854A)](https://kaizen-7.github.io/ns-creative-studio/)
+[![PWA](https://img.shields.io/badge/PWA-installable-3E2E21)](https://kaizen-7.github.io/ns-creative-studio/)
+
+A little side project built with love for my girlfriend, to help her create
+Instagram content for her lash & nails studio without fighting design tools.
+
 Installable PWA that generates Instagram creatives (nude palette) for **@ns.lashandnails**.
 Fully self-contained: 2D canvas, Mont fonts embedded as base64, no external dependencies.
 
