@@ -1,6 +1,6 @@
 // Bump the version on every deploy: old caches get deleted on activate,
 // so the PWA picks up the new build at the second launch at the latest.
-const CACHE = 'ns-studio-v2';
+const CACHE = 'ns-studio-v3';
 
 const ASSETS = [
   './',

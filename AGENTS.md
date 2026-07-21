@@ -51,7 +51,7 @@ Template attuali:
 | `pd`        | `fieldsPd`        | `drawPd`        | Prima/Dopo, foto 16:9 impilate, drag+zoom, layout fluido a cursore Y |
 | `risultato` | `fieldsRisultato` | `drawRisultato` | box unico 16:9 col risultato finale, drag+zoom, blocco centrato verticalmente |
 | `newpost`   | `fieldsNewPost`   | `drawNewPost`   | forza Story; texture "new post" in corsivo (SERIF) + riquadro con corner marks + titolo oro bold sopra il box |
-| `cover`     | `fieldsCover`     | `drawCover`     | formato fisso 1080×1080; copertina highlight: solo icona centrata nel cerchio IG; 3 stili sfondo (light/gold/brown), 26 icone via dropdown |
+| `cover`     | `fieldsCover`     | `drawCover`     | formato fisso 1080×1080; copertina highlight: solo icona centrata nel cerchio IG; sfondo chiaro fisso, 26 icone via dropdown |
 
 L'handler dei tab (`#tpl button` click) fa il toggle delle classi `.active` e `.hidden`,
 setta `template`, e forza `format='story'` per `listino` e `newpost`. Per `cover`
@@ -59,11 +59,11 @@ nasconde `#footerField` e `#fmtField` (formato fisso 1080×1080, niente footer).
 
 ### Copertine highlight (`cover`)
 - Formato **1080×1080** (deciso in `draw()`, non usa il toggle formato).
-- Stato: `coverIcon` (26 valori) e `coverBg` (`light|gold|brown`).
+- Stato: `coverIcon` (26 valori). Sfondo chiaro nude fisso (niente selettore).
 - Icone: dispatcher `drawIcon(kind,cx,cy,size,col)` con uno `switch` su ~26 forme disegnate a mano
   (heart/star/sparkle/flower/lash hanno funzioni dedicate; il resto è inline).
   `iconLash` ricolora `lashMotif` (che usa COL.gold fisso) via `globalCompositeOperation='source-atop'`.
-- Selettori UI: `#cv_icon` (`<select>`) e `#cvBg` (toggle button con `data-b`).
+- Selettore UI: `#cv_icon` (`<select>`, con voci utili in cima: Feedback, Recensioni, ...).
 - Solo icona centrata: il nome dell'highlight si scrive in Instagram, non nell'immagine.
 - IG ritaglia un cerchio al centro: l'icona sta nella safe-zone (~30% del lato), con anello guida.
 

@@ -167,40 +167,34 @@
     <div id="fieldsCover" class="hidden">
       <label>Icona</label>
       <select id="cv_icon">
+        <option value="chat">Feedback / messaggi</option>
+        <option value="star">Recensioni / stella</option>
+        <option value="heart">Preferiti / cuore</option>
         <option value="lash">Ciglia</option>
         <option value="eye">Occhio</option>
         <option value="lips">Labbra</option>
+        <option value="hand">Mano / unghie</option>
+        <option value="polish">Smalto</option>
         <option value="flower">Fiore</option>
         <option value="leaf">Foglia</option>
-        <option value="heart">Cuore</option>
-        <option value="star">Stella</option>
         <option value="sparkle">Luccichio</option>
         <option value="gem">Gemma</option>
         <option value="diamond">Diamante</option>
         <option value="crown">Corona</option>
         <option value="bow">Fiocco</option>
-        <option value="polish">Smalto</option>
-        <option value="hand">Mano / unghie</option>
         <option value="scissors">Forbici</option>
         <option value="drop">Goccia</option>
         <option value="sun">Sole</option>
         <option value="moon">Luna</option>
-        <option value="flame">Fiamma</option>
+        <option value="flame">Fiamma / novità</option>
         <option value="bolt">Fulmine</option>
-        <option value="bell">Campana</option>
-        <option value="camera">Fotocamera</option>
-        <option value="chat">Messaggio</option>
-        <option value="tag">Etichetta</option>
-        <option value="calendar">Calendario</option>
-        <option value="pin">Posizione</option>
+        <option value="bell">Campana / avvisi</option>
+        <option value="camera">Foto</option>
+        <option value="tag">Offerte / prezzo</option>
+        <option value="calendar">Prenotazioni</option>
+        <option value="pin">Dove siamo</option>
       </select>
-      <label>Stile sfondo</label>
-      <div class="toggle" id="cvBg">
-        <button data-b="light" class="active">Chiaro</button>
-        <button data-b="gold">Oro</button>
-        <button data-b="brown">Scuro</button>
-      </div>
-      <div class="hint" style="margin-top:12px;text-align:left">Il nome dell'highlight (es. "Risultati") si scrive direttamente su Instagram sotto la copertina.</div>
+      <div class="hint" style="margin-top:12px;text-align:left">Il nome dell'highlight (es. "Feedback") si scrive direttamente su Instagram sotto la copertina.</div>
     </div>
 
     <div id="footerField">
@@ -222,7 +216,7 @@ const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 let format = 'feed', template = 'offerta';
 let photoPrima = null, photoDopo = null, photoRis = null;
-let coverIcon = 'lash', coverBg = 'light';
+let coverIcon = 'chat';
 // Per-photo transform: zoom (scala aggiuntiva) e offset normalizzato (-1..1) rispetto al box.
 const tf = {
   prima: { zoom: 1, ox: 0, oy: 0 },
@@ -927,26 +921,12 @@ function drawNewPost(W, H) {
 function drawCover(W, H) {
   // Copertina highlight: immagine quadrata, IG ne ritaglia un cerchio centrale.
   // Solo icona centrata (il nome dell'highlight si scrive su Instagram).
-  if (coverBg === 'gold') {
-    const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0, COL.goldSoft); g.addColorStop(1, COL.gold);
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-  } else if (coverBg === 'brown') {
-    ctx.fillStyle = COL.brown; ctx.fillRect(0,0,W,H);
-    const rg = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.62);
-    rg.addColorStop(0,'rgba(176,133,74,0.22)'); rg.addColorStop(1,'rgba(176,133,74,0)');
-    ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
-  } else {
-    const g = ctx.createLinearGradient(0,0,0,H);
-    g.addColorStop(0, COL.bgTop); g.addColorStop(1, COL.bgBot);
-    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
-  }
+  // Sfondo chiaro nude coerente col resto.
+  const g = ctx.createLinearGradient(0,0,0,H);
+  g.addColorStop(0, COL.bgTop); g.addColorStop(1, COL.bgBot);
+  ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
 
-  let iconCol, ringCol;
-  if (coverBg === 'gold')       { iconCol = COL.cream; ringCol = 'rgba(255,255,255,0.5)'; }
-  else if (coverBg === 'brown') { iconCol = COL.gold;  ringCol = 'rgba(176,133,74,0.55)'; }
-  else                          { iconCol = COL.gold;  ringCol = 'rgba(176,133,74,0.45)'; }
-
+  const iconCol = COL.gold, ringCol = 'rgba(176,133,74,0.45)';
   const cx = W/2, cy = H/2;
 
   // Anello sottile che suggerisce il cerchio ritagliato da Instagram.
@@ -996,10 +976,6 @@ document.querySelectorAll('#tpl button').forEach(b => b.addEventListener('click'
   draw();
 }));
 document.getElementById('cv_icon').addEventListener('change', e => { coverIcon = e.target.value; draw(); });
-document.querySelectorAll('#cvBg button').forEach(b => b.addEventListener('click', () => {
-  document.querySelectorAll('#cvBg button').forEach(x=>x.classList.remove('active'));
-  b.classList.add('active'); coverBg = b.dataset.b; draw();
-}));
 document.querySelectorAll('input[type=text]').forEach(i => i.addEventListener('input', draw));
 
 function hookUpload(boxId, inputId, setter, zoomRowId) {
