@@ -29,16 +29,22 @@
   input[type=text] { width:100%; background:var(--bg); border:1px solid #DCCBB4; border-radius:10px; color:var(--brown); font-family:'Mont',sans-serif; font-size:16px; padding:10px 12px; }
   input[type=text]:focus { outline:2px solid var(--gold); border-color:transparent; }
   .row { display:flex; gap:10px; } .row > div { flex:1; }
-  .toggle { display:flex; gap:8px; }
-  .toggle button { flex:1; background:var(--bg); border:1px solid #DCCBB4; border-radius:10px; color:var(--muted); font-family:'Mont',sans-serif; font-size:13px; padding:10px 6px; cursor:pointer; }
+  .toggle { display:flex; gap:8px; flex-wrap:wrap; }
+  select { width:100%; background:var(--bg); border:1px solid #DCCBB4; border-radius:10px; color:var(--brown); font-family:'Mont',sans-serif; font-size:16px; padding:10px 12px; }
+  select:focus { outline:2px solid var(--gold); border-color:transparent; }
+  .toggle button { flex:1 1 auto; min-width:88px; background:var(--bg); border:1px solid #DCCBB4; border-radius:10px; color:var(--muted); font-family:'Mont',sans-serif; font-size:13px; padding:10px 6px; cursor:pointer; }
   .toggle button.active { background:var(--gold); border-color:var(--gold); color:#FFF; font-weight:600; }
   .filebox { border:1.5px dashed #DCCBB4; border-radius:12px; padding:14px; text-align:center; color:var(--muted); font-size:13px; cursor:pointer; }
   .filebox.loaded { border-color:var(--gold); color:var(--gold); }
   .filebox input { display:none; }
+  .zoomrow { display:none; align-items:center; gap:10px; margin-top:8px; }
+  .zoomrow.show { display:flex; }
+  .zoomrow span { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); flex:0 0 auto; }
+  .zoomrow input[type=range] { flex:1; accent-color:var(--gold); height:22px; }
   .dl { width:100%; margin-top:22px; background:var(--brown); border:none; border-radius:999px; color:#FAF6F0; font-family:'Mont',sans-serif; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; font-size:14px; padding:15px; cursor:pointer; }
   .dl:hover { filter:brightness(1.15); }
   .preview { flex:1 1 340px; display:flex; flex-direction:column; align-items:center; gap:12px; }
-  canvas { width:100%; max-width:420px; height:auto; border-radius:14px; box-shadow:0 12px 40px rgba(90,66,42,.22); }
+  canvas { width:100%; max-width:420px; height:auto; border-radius:14px; box-shadow:0 12px 40px rgba(90,66,42,.22); touch-action:none; }
   .hint { font-size:12px; color:var(--muted); text-align:center; max-width:380px; }
   .hidden { display:none; }
   @media (max-width:700px) {
@@ -60,12 +66,17 @@
       <button data-t="offerta" class="active">Offerta</button>
       <button data-t="listino">Listino</button>
       <button data-t="pd">Prima/Dopo</button>
+      <button data-t="risultato">Risultato</button>
+      <button data-t="newpost">New Post</button>
+      <button data-t="cover">Copertine</button>
     </div>
 
-    <label>Formato</label>
-    <div class="toggle" id="fmt">
-      <button data-f="feed" class="active">Feed 1080×1350</button>
-      <button data-f="story">Story 1080×1920</button>
+    <div id="fmtField">
+      <label>Formato</label>
+      <div class="toggle" id="fmt">
+        <button data-f="feed" class="active">Feed 1080×1350</button>
+        <button data-f="story">Story 1080×1920</button>
+      </div>
     </div>
 
     <div id="fieldsOfferta">
@@ -111,8 +122,16 @@
       <input type="text" id="p_title" value="Laminazione ciglia">
       <label>Foto PRIMA</label>
       <div class="filebox" id="boxPrima">tocca per caricare la foto<input type="file" id="imgPrima" accept="image/*"></div>
+      <div class="zoomrow" id="zoomPrima">
+        <span>zoom</span>
+        <input type="range" id="zPrima" min="1" max="3" step="0.01" value="1">
+      </div>
       <label>Foto DOPO</label>
       <div class="filebox" id="boxDopo">tocca per caricare la foto<input type="file" id="imgDopo" accept="image/*"></div>
+      <div class="zoomrow" id="zoomDopo">
+        <span>zoom</span>
+        <input type="range" id="zDopo" min="1" max="3" step="0.01" value="1">
+      </div>
       <label>Riga 1 sotto le foto</label>
       <input type="text" id="p_line1" value="Nessuna extension. Nessun mascara.">
       <label>Riga 2 sotto le foto</label>
@@ -121,15 +140,80 @@
       <input type="text" id="p_last" value="Scorri per vedere altri risultati">
     </div>
 
-    <label>Footer (zona · profilo)</label>
-    <input type="text" id="footer" value="Parco Leonardo, Fiumicino   ·   @ns.lashandnails">
+    <div id="fieldsRisultato" class="hidden">
+      <label>Riga in alto</label>
+      <input type="text" id="r_eyebrow" value="IL RISULTATO">
+      <label>Titolo</label>
+      <input type="text" id="r_title" value="Laminazione ciglia">
+      <label>Foto risultato</label>
+      <div class="filebox" id="boxRis">tocca per caricare la foto<input type="file" id="imgRis" accept="image/*"></div>
+      <div class="zoomrow" id="zoomRis">
+        <span>zoom</span>
+        <input type="range" id="zRis" min="1" max="3" step="0.01" value="1">
+      </div>
+      <label>Riga 1 sotto la foto</label>
+      <input type="text" id="r_line1" value="Effetto naturale che dura settimane.">
+      <label>Riga 2 sotto la foto</label>
+      <input type="text" id="r_line2" value="Solo le tue ciglia, al massimo.">
+    </div>
+
+    <div id="fieldsNewPost" class="hidden">
+      <label>Testo invito (opzionale)</label>
+      <input type="text" id="np_eyebrow" value="Nuovo post online">
+      <label>Testo di sfondo ripetuto</label>
+      <input type="text" id="np_text" value="new post">
+    </div>
+
+    <div id="fieldsCover" class="hidden">
+      <label>Icona</label>
+      <select id="cv_icon">
+        <option value="lash">Ciglia</option>
+        <option value="eye">Occhio</option>
+        <option value="lips">Labbra</option>
+        <option value="flower">Fiore</option>
+        <option value="leaf">Foglia</option>
+        <option value="heart">Cuore</option>
+        <option value="star">Stella</option>
+        <option value="sparkle">Luccichio</option>
+        <option value="gem">Gemma</option>
+        <option value="diamond">Diamante</option>
+        <option value="crown">Corona</option>
+        <option value="bow">Fiocco</option>
+        <option value="polish">Smalto</option>
+        <option value="hand">Mano / unghie</option>
+        <option value="scissors">Forbici</option>
+        <option value="drop">Goccia</option>
+        <option value="sun">Sole</option>
+        <option value="moon">Luna</option>
+        <option value="flame">Fiamma</option>
+        <option value="bolt">Fulmine</option>
+        <option value="bell">Campana</option>
+        <option value="camera">Fotocamera</option>
+        <option value="chat">Messaggio</option>
+        <option value="tag">Etichetta</option>
+        <option value="calendar">Calendario</option>
+        <option value="pin">Posizione</option>
+      </select>
+      <label>Stile sfondo</label>
+      <div class="toggle" id="cvBg">
+        <button data-b="light" class="active">Chiaro</button>
+        <button data-b="gold">Oro</button>
+        <button data-b="brown">Scuro</button>
+      </div>
+      <div class="hint" style="margin-top:12px;text-align:left">Il nome dell'highlight (es. "Risultati") si scrive direttamente su Instagram sotto la copertina.</div>
+    </div>
+
+    <div id="footerField">
+      <label>Footer (zona · profilo)</label>
+      <input type="text" id="footer" value="Parco Leonardo, Fiumicino   ·   @ns.lashandnails">
+    </div>
 
     <button class="dl" id="download">Scarica PNG</button>
   </div>
 
   <div class="preview">
     <canvas id="cv" width="1080" height="1350"></canvas>
-    <div class="hint">Le foto vengono ritagliate automaticamente. Campo vuoto = elemento nascosto.</div>
+    <div class="hint">Prima/Dopo: trascina la foto nel riquadro per spostarla, usa lo slider per lo zoom. Campo vuoto = elemento nascosto.</div>
   </div>
 </div>
 
@@ -137,12 +221,34 @@
 const cv = document.getElementById('cv');
 const ctx = cv.getContext('2d');
 let format = 'feed', template = 'offerta';
-let photoPrima = null, photoDopo = null;
+let photoPrima = null, photoDopo = null, photoRis = null;
+let coverIcon = 'lash', coverBg = 'light';
+// Per-photo transform: zoom (scala aggiuntiva) e offset normalizzato (-1..1) rispetto al box.
+const tf = {
+  prima: { zoom: 1, ox: 0, oy: 0 },
+  dopo:  { zoom: 1, ox: 0, oy: 0 },
+  ris:   { zoom: 1, ox: 0, oy: 0 },
+};
+// Rettangoli dei box disegnati (in coordinate canvas) per gestire il drag.
+let pdRects = {};
 
 const COL = { bgTop:'#F7F1E8', bgBot:'#E9DAC7', gold:'#B0854A', goldSoft:'#C8A573',
               brown:'#3E2E21', muted:'#9E8871', rose:'rgba(209,164,148,0.20)',
               cream:'#FAF6F0', boxFill:'#F1E7D8' };
+// Font serif corsivo per i tocchi eleganti (fallback di sistema, nessun embed).
+const SERIF = 'Georgia, "Times New Roman", serif';
 const $ = id => document.getElementById(id).value;
+
+// Corner marks a "mirino" agli angoli di un box.
+function cornerMarks(x, y, w, h, len, col) {
+  ctx.strokeStyle = col; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  const corners = [[x,y,1,1],[x+w,y,-1,1],[x,y+h,1,-1],[x+w,y+h,-1,-1]];
+  corners.forEach(([px,py,sx,sy]) => {
+    ctx.beginPath();
+    ctx.moveTo(px+sx*len, py); ctx.lineTo(px, py); ctx.lineTo(px, py+sy*len);
+    ctx.stroke();
+  });
+}
 
 function trackWidth(text, tracking) {
   return [...text].reduce((a,ch)=>a+ctx.measureText(ch).width,0) + tracking*(text.length-1);
@@ -198,6 +304,268 @@ function lashMotif(cx, cy, width) {
     ctx.quadraticCurveTo(ox+mx*s, oy+my*s, ox+x1*s, oy+y1*s);
     ctx.stroke();
   }
+}
+
+function iconHeart(cx, cy, size, col) {
+  ctx.save();
+  ctx.strokeStyle = col; ctx.lineWidth = size*0.09; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  const s = size/2;
+  ctx.beginPath();
+  ctx.moveTo(cx, cy + s*0.75);
+  ctx.bezierCurveTo(cx - s*1.3, cy - s*0.2, cx - s*0.5, cy - s*0.95, cx, cy - s*0.35);
+  ctx.bezierCurveTo(cx + s*0.5, cy - s*0.95, cx + s*1.3, cy - s*0.2, cx, cy + s*0.75);
+  ctx.stroke();
+  ctx.restore();
+}
+
+function iconStar(cx, cy, size, col) {
+  ctx.save();
+  ctx.strokeStyle = col; ctx.lineJoin = 'round';
+  const spikes = 5, outer = size*0.55, inner = outer*0.42;
+  ctx.beginPath();
+  for (let i = 0; i < spikes*2; i++) {
+    const r = i % 2 === 0 ? outer : inner;
+    const a = -Math.PI/2 + i*Math.PI/spikes;
+    const x = cx + r*Math.cos(a), y = cy + r*Math.sin(a);
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.lineWidth = size*0.09; ctx.stroke();
+  ctx.restore();
+}
+
+function iconSparkle(cx, cy, size, col) {
+  ctx.save();
+  ctx.fillStyle = col;
+  const arm = (bx, by, len, wid) => {
+    ctx.beginPath();
+    ctx.moveTo(bx, by-len);
+    ctx.quadraticCurveTo(bx+wid, by, bx+len, by);
+    ctx.quadraticCurveTo(bx+wid, by, bx, by+len);
+    ctx.quadraticCurveTo(bx-wid, by, bx-len, by);
+    ctx.quadraticCurveTo(bx-wid, by, bx, by-len);
+    ctx.fill();
+  };
+  arm(cx, cy, size*0.55, size*0.09);
+  arm(cx + size*0.42, cy - size*0.36, size*0.22, size*0.04);
+  ctx.restore();
+}
+
+function iconFlower(cx, cy, size, col) {
+  ctx.save();
+  ctx.strokeStyle = col; ctx.lineWidth = size*0.08; ctx.lineJoin = 'round';
+  const petals = 6, pr = size*0.34;
+  for (let i = 0; i < petals; i++) {
+    const a = i * (Math.PI*2/petals);
+    const px = cx + Math.cos(a)*pr*0.7, py = cy + Math.sin(a)*pr*0.7;
+    ctx.beginPath();
+    ctx.ellipse(px, py, pr*0.62, pr*0.32, a, 0, Math.PI*2);
+    ctx.stroke();
+  }
+  ctx.fillStyle = col;
+  ctx.beginPath(); ctx.arc(cx, cy, size*0.13, 0, Math.PI*2); ctx.fill();
+  ctx.restore();
+}
+
+// Ciglia con colore arbitrario (lashMotif usa COL.gold fisso).
+function iconLash(cx, cy, size, col) {
+  if (col === COL.gold) { lashMotif(cx, cy, size*1.15); return; }
+  ctx.save();
+  lashMotif(cx, cy, size*1.15);
+  ctx.globalCompositeOperation = 'source-atop';
+  ctx.fillStyle = col;
+  ctx.fillRect(cx - size, cy - size, size*2, size*2);
+  ctx.restore();
+}
+
+function drawIcon(kind, cx, cy, size, col) {
+  const S = size, hs = size/2;
+  ctx.save();
+  ctx.strokeStyle = col; ctx.fillStyle = col;
+  ctx.lineWidth = size*0.085; ctx.lineJoin = 'round'; ctx.lineCap = 'round';
+  switch (kind) {
+    case 'heart':   ctx.restore(); return iconHeart(cx, cy, size, col);
+    case 'star':    ctx.restore(); return iconStar(cx, cy, size, col);
+    case 'sparkle': ctx.restore(); return iconSparkle(cx, cy, size, col);
+    case 'flower':  ctx.restore(); return iconFlower(cx, cy, size, col);
+    case 'lash':    ctx.restore(); return iconLash(cx, cy, size, col);
+
+    case 'drop': {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - hs*0.9);
+      ctx.bezierCurveTo(cx + hs*0.85, cy - hs*0.1, cx + hs*0.6, cy + hs*0.85, cx, cy + hs*0.85);
+      ctx.bezierCurveTo(cx - hs*0.6, cy + hs*0.85, cx - hs*0.85, cy - hs*0.1, cx, cy - hs*0.9);
+      ctx.stroke(); break;
+    }
+    case 'diamond': {
+      const w = hs*0.9, h = hs*0.95, ty = cy - h, by = cy + h, tw = w*0.5;
+      ctx.beginPath();
+      ctx.moveTo(cx - tw, ty); ctx.lineTo(cx + tw, ty);
+      ctx.lineTo(cx + w, cy - h*0.35); ctx.lineTo(cx, by);
+      ctx.lineTo(cx - w, cy - h*0.35); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - tw, ty); ctx.lineTo(cx, cy - h*0.35);
+      ctx.lineTo(cx + tw, ty); ctx.moveTo(cx - w, cy - h*0.35);
+      ctx.lineTo(cx, cy - h*0.35); ctx.lineTo(cx + w, cy - h*0.35);
+      ctx.moveTo(cx, cy - h*0.35); ctx.lineTo(cx, by); ctx.stroke(); break;
+    }
+    case 'moon': {
+      ctx.beginPath();
+      ctx.arc(cx + hs*0.15, cy, hs*0.85, Math.PI*0.35, Math.PI*1.65, false);
+      ctx.arc(cx - hs*0.2, cy, hs*0.72, Math.PI*1.55, Math.PI*0.45, true);
+      ctx.closePath(); ctx.stroke(); break;
+    }
+    case 'sun': {
+      ctx.beginPath(); ctx.arc(cx, cy, hs*0.5, 0, Math.PI*2); ctx.stroke();
+      for (let i = 0; i < 8; i++) {
+        const a = i*Math.PI/4;
+        ctx.beginPath();
+        ctx.moveTo(cx + Math.cos(a)*hs*0.72, cy + Math.sin(a)*hs*0.72);
+        ctx.lineTo(cx + Math.cos(a)*hs*0.95, cy + Math.sin(a)*hs*0.95);
+        ctx.stroke();
+      } break;
+    }
+    case 'eye': {
+      ctx.beginPath();
+      ctx.moveTo(cx - hs*0.9, cy);
+      ctx.quadraticCurveTo(cx, cy - hs*0.85, cx + hs*0.9, cy);
+      ctx.quadraticCurveTo(cx, cy + hs*0.85, cx - hs*0.9, cy);
+      ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy, hs*0.28, 0, Math.PI*2); ctx.stroke(); break;
+    }
+    case 'lips': {
+      ctx.beginPath();
+      ctx.moveTo(cx - hs*0.9, cy - hs*0.05);
+      ctx.quadraticCurveTo(cx - hs*0.45, cy - hs*0.55, cx, cy - hs*0.15);
+      ctx.quadraticCurveTo(cx + hs*0.45, cy - hs*0.55, cx + hs*0.9, cy - hs*0.05);
+      ctx.quadraticCurveTo(cx + hs*0.5, cy + hs*0.6, cx, cy + hs*0.55);
+      ctx.quadraticCurveTo(cx - hs*0.5, cy + hs*0.6, cx - hs*0.9, cy - hs*0.05);
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - hs*0.9, cy - hs*0.05);
+      ctx.quadraticCurveTo(cx, cy + hs*0.1, cx + hs*0.9, cy - hs*0.05); ctx.stroke(); break;
+    }
+    case 'crown': {
+      const b = cy + hs*0.55;
+      ctx.beginPath();
+      ctx.moveTo(cx - hs*0.85, b);
+      ctx.lineTo(cx - hs*0.85, cy - hs*0.5);
+      ctx.lineTo(cx - hs*0.35, cy + hs*0.05);
+      ctx.lineTo(cx, cy - hs*0.7);
+      ctx.lineTo(cx + hs*0.35, cy + hs*0.05);
+      ctx.lineTo(cx + hs*0.85, cy - hs*0.5);
+      ctx.lineTo(cx + hs*0.85, b);
+      ctx.closePath(); ctx.stroke(); break;
+    }
+    case 'bow': {
+      ctx.beginPath(); ctx.arc(cx, cy, hs*0.16, 0, Math.PI*2); ctx.stroke();
+      const loop = (dir) => {
+        ctx.beginPath();
+        ctx.moveTo(cx + dir*hs*0.16, cy - hs*0.16);
+        ctx.quadraticCurveTo(cx + dir*hs*0.95, cy - hs*0.7, cx + dir*hs*0.9, cy);
+        ctx.quadraticCurveTo(cx + dir*hs*0.95, cy + hs*0.7, cx + dir*hs*0.16, cy + hs*0.16);
+        ctx.stroke();
+      };
+      loop(1); loop(-1); break;
+    }
+    case 'leaf': {
+      ctx.beginPath();
+      ctx.moveTo(cx - hs*0.7, cy + hs*0.7);
+      ctx.quadraticCurveTo(cx - hs*0.9, cy - hs*0.8, cx + hs*0.7, cy - hs*0.7);
+      ctx.quadraticCurveTo(cx + hs*0.5, cy + hs*0.7, cx - hs*0.7, cy + hs*0.7);
+      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - hs*0.7, cy + hs*0.7);
+      ctx.quadraticCurveTo(cx, cy - hs*0.2, cx + hs*0.55, cy - hs*0.55); ctx.stroke(); break;
+    }
+    case 'polish': {
+      // flaconcino smalto
+      ctx.beginPath(); ctx.roundRect(cx - hs*0.4, cy - hs*0.1, hs*0.8, hs*0.95, hs*0.14); ctx.stroke();
+      ctx.beginPath(); ctx.rect(cx - hs*0.22, cy - hs*0.45, hs*0.44, hs*0.35); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy - hs*0.45); ctx.lineTo(cx, cy - hs*0.9); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy - hs*0.95, hs*0.14, 0, Math.PI*2); ctx.stroke(); break;
+    }
+    case 'scissors': {
+      ctx.beginPath(); ctx.arc(cx - hs*0.5, cy + hs*0.45, hs*0.24, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx + hs*0.5, cy + hs*0.45, hs*0.24, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(cx - hs*0.32, cy + hs*0.28); ctx.lineTo(cx + hs*0.7, cy - hs*0.7);
+      ctx.moveTo(cx + hs*0.32, cy + hs*0.28); ctx.lineTo(cx - hs*0.7, cy - hs*0.7);
+      ctx.stroke(); break;
+    }
+    case 'hand': {
+      // mano stilizzata con unghie
+      ctx.beginPath(); ctx.roundRect(cx - hs*0.55, cy - hs*0.2, hs*1.1, hs*0.95, hs*0.2); ctx.stroke();
+      for (let i = 0; i < 4; i++) {
+        const fx = cx - hs*0.4 + i*hs*0.27;
+        ctx.beginPath(); ctx.moveTo(fx, cy - hs*0.2); ctx.lineTo(fx, cy - hs*0.8); ctx.stroke();
+        ctx.beginPath(); ctx.ellipse(fx, cy - hs*0.85, hs*0.1, hs*0.14, 0, 0, Math.PI*2); ctx.stroke();
+      } break;
+    }
+    case 'bolt': {
+      ctx.beginPath();
+      ctx.moveTo(cx + hs*0.25, cy - hs*0.9);
+      ctx.lineTo(cx - hs*0.4, cy + hs*0.15);
+      ctx.lineTo(cx + hs*0.05, cy + hs*0.15);
+      ctx.lineTo(cx - hs*0.25, cy + hs*0.9);
+      ctx.lineTo(cx + hs*0.45, cy - hs*0.2);
+      ctx.lineTo(cx, cy - hs*0.2);
+      ctx.closePath(); ctx.stroke(); break;
+    }
+    case 'flame': {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - hs*0.9);
+      ctx.bezierCurveTo(cx + hs*0.8, cy - hs*0.2, cx + hs*0.5, cy + hs*0.85, cx, cy + hs*0.85);
+      ctx.bezierCurveTo(cx - hs*0.5, cy + hs*0.85, cx - hs*0.8, cy - hs*0.1, cx - hs*0.1, cy - hs*0.5);
+      ctx.quadraticCurveTo(cx - hs*0.05, cy - hs*0.1, cx + hs*0.05, cy - hs*0.35);
+      ctx.quadraticCurveTo(cx + hs*0.2, cy - hs*0.6, cx, cy - hs*0.9);
+      ctx.stroke(); break;
+    }
+    case 'bell': {
+      ctx.beginPath();
+      ctx.moveTo(cx - hs*0.6, cy + hs*0.45);
+      ctx.quadraticCurveTo(cx - hs*0.6, cy - hs*0.6, cx, cy - hs*0.75);
+      ctx.quadraticCurveTo(cx + hs*0.6, cy - hs*0.6, cx + hs*0.6, cy + hs*0.45);
+      ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy + hs*0.7, hs*0.13, 0, Math.PI*2); ctx.stroke(); break;
+    }
+    case 'camera': {
+      ctx.beginPath(); ctx.roundRect(cx - hs*0.85, cy - hs*0.45, hs*1.7, hs*1.1, hs*0.16); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy + hs*0.1, hs*0.34, 0, Math.PI*2); ctx.stroke();
+      ctx.beginPath(); ctx.roundRect(cx - hs*0.3, cy - hs*0.7, hs*0.6, hs*0.28, hs*0.08); ctx.stroke(); break;
+    }
+    case 'chat': {
+      ctx.beginPath(); ctx.roundRect(cx - hs*0.8, cy - hs*0.6, hs*1.6, hs*1.05, hs*0.24); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - hs*0.3, cy + hs*0.45); ctx.lineTo(cx - hs*0.45, cy + hs*0.85);
+      ctx.lineTo(cx + hs*0.05, cy + hs*0.45); ctx.stroke(); break;
+    }
+    case 'tag': {
+      ctx.beginPath();
+      ctx.moveTo(cx - hs*0.75, cy - hs*0.1);
+      ctx.lineTo(cx + hs*0.1, cy - hs*0.75);
+      ctx.lineTo(cx + hs*0.8, cy - hs*0.05);
+      ctx.lineTo(cx - hs*0.05, cy + hs*0.8);
+      ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx + hs*0.35, cy - hs*0.3, hs*0.1, 0, Math.PI*2); ctx.stroke(); break;
+    }
+    case 'gem': {
+      ctx.beginPath();
+      ctx.moveTo(cx, cy - hs*0.75); ctx.lineTo(cx + hs*0.7, cy - hs*0.15);
+      ctx.lineTo(cx, cy + hs*0.8); ctx.lineTo(cx - hs*0.7, cy - hs*0.15);
+      ctx.closePath(); ctx.stroke(); break;
+    }
+    case 'calendar': {
+      ctx.beginPath(); ctx.roundRect(cx - hs*0.7, cy - hs*0.55, hs*1.4, hs*1.3, hs*0.12); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - hs*0.7, cy - hs*0.2); ctx.lineTo(cx + hs*0.7, cy - hs*0.2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx - hs*0.35, cy - hs*0.75); ctx.lineTo(cx - hs*0.35, cy - hs*0.35);
+      ctx.moveTo(cx + hs*0.35, cy - hs*0.75); ctx.lineTo(cx + hs*0.35, cy - hs*0.35); ctx.stroke(); break;
+    }
+    case 'pin': {
+      ctx.beginPath();
+      ctx.arc(cx, cy - hs*0.2, hs*0.5, Math.PI*0.85, Math.PI*0.15, false);
+      ctx.lineTo(cx, cy + hs*0.8); ctx.closePath(); ctx.stroke();
+      ctx.beginPath(); ctx.arc(cx, cy - hs*0.2, hs*0.17, 0, Math.PI*2); ctx.stroke(); break;
+    }
+    default: ctx.restore(); return iconLash(cx, cy, size, col);
+  }
+  ctx.restore();
 }
 
 function pin(cx, cy, r) {
@@ -261,13 +629,21 @@ function priceBlock(W, yTop, oldT, newT, big) {
   }
 }
 
-function coverImage(img, x, y, w, h, radius) {
+function coverImage(img, x, y, w, h, radius, transform) {
+  const t = transform || { zoom: 1, ox: 0, oy: 0 };
   ctx.save();
   ctx.beginPath(); ctx.roundRect(x, y, w, h, radius); ctx.clip();
   const ir = img.width/img.height, br = w/h;
   let dw, dh;
   if (ir > br) { dh = h; dw = h*ir; } else { dw = w; dh = w/ir; }
-  ctx.drawImage(img, x+(w-dw)/2, y+(h-dh)/2, dw, dh);
+  // Applica zoom aggiuntivo.
+  dw *= t.zoom; dh *= t.zoom;
+  // Offset: quanto spazio "extra" ho oltre al box, spostabile con ox/oy in [-1,1].
+  const slackX = Math.max(0, dw - w) / 2;
+  const slackY = Math.max(0, dh - h) / 2;
+  const dx = x + (w - dw)/2 + t.ox * slackX;
+  const dy = y + (h - dh)/2 + t.oy * slackY;
+  ctx.drawImage(img, dx, dy, dw, dh);
   ctx.restore();
 }
 
@@ -326,62 +702,273 @@ function drawListino(W, H) {
 }
 
 function drawPd(W, H) {
-  const s = format==='feed'
-    ? { eyebrow:120, title:255, boxY:370, boxH:590, line1:1075, line2:1133, last:1230, foot:1300 }
-    : { eyebrow:190, title:345, boxY:480, boxH:840, line1:1450, line2:1510, last:1630, foot:1810 };
-  const eb = $('p_eyebrow');
-  if (eb) centerText(eb.toUpperCase(), s.eyebrow, '500 32px Mont', COL.gold, 12);
-  const t = $('p_title');
-  if (t) { const T=t.toUpperCase(), sz=fitFont(T,'300',80,940,10); centerText(T, s.title, '300 '+sz+'px Mont', COL.brown, 10); }
+  // Layout fluido a cursore verticale: ogni elemento presente avanza `y`,
+  // gli elementi vuoti non lasciano buchi. Il footer resta ancorato in basso.
+  const feed = format === 'feed';
+  const radius = 28;
 
-  const boxW = 460, gap = 60;
-  const x0 = (W-(boxW*2+gap))/2;
+  // Spaziature verticali (feed piu' compatto della story).
+  const GAP = feed
+    ? { top:70, afterEyebrow:52, afterTitle:44, boxGap:40, afterBoxes:52, afterLine1:46, afterLine2:56, footPad:52 }
+    : { top:180, afterEyebrow:74, afterTitle:90, boxGap:60, afterBoxes:90, afterLine1:60, afterLine2:80, footPad:110 };
+
+  // --- Pre-misura l'altezza dei testi per dimensionare i box in modo che entri tutto ---
+  const ebTxt = $('p_eyebrow');
+  const tTxt = $('p_title');
+  let titleSz = 0;
+  if (tTxt) { const startT = feed ? 60 : 80; ctx.font = '300 '+startT+'px Mont'; titleSz = fitFont(tTxt.toUpperCase(),'300',startT,940,10); }
+  const l1Txt = $('p_line1'), l2Txt = $('p_line2'), lastTxt = $('p_last');
+
+  const topBlock = GAP.top
+    + (ebTxt ? GAP.afterEyebrow : 0)
+    + (tTxt ? titleSz*0.5 + GAP.afterTitle : 0);
+  const bottomBlock = GAP.afterBoxes
+    + (l1Txt ? GAP.afterLine1 : 0)
+    + (l2Txt ? GAP.afterLine2 : 0)
+    + (lastTxt ? (feed ? 42 : 50) : 0)
+    + GAP.footPad + 40; // spazio footer
+
+  // Altezza disponibile per i due box + gap fra loro.
+  const avail = H - topBlock - bottomBlock;
+  // Larghezza fissa: box con margine laterale che dà respiro (~5.5% della larghezza).
+  const sideMargin = 60;
+  const boxW = W - sideMargin*2;
+  // Altezza ideale 16:9, ma se non entra la si abbassa (rapporto piu' panoramico).
+  const idealH = boxW * 9 / 16;
+  const maxBoxH = (avail - GAP.boxGap) / 2;
+  const boxH = Math.round(Math.min(idealH, maxBoxH));
+  const x0 = sideMargin;
+  const vgap = GAP.boxGap;
+
+  let y = GAP.top;
+
+  if (ebTxt) {
+    centerText(ebTxt.toUpperCase(), y, '500 '+(feed?28:32)+'px Mont', COL.gold, 12);
+    y += GAP.afterEyebrow;
+  }
+  if (tTxt) {
+    const T = tTxt.toUpperCase();
+    centerText(T, y + titleSz*0.5, '300 '+titleSz+'px Mont', COL.brown, 10);
+    y += titleSz*0.5 + GAP.afterTitle;
+  }
+
+  // Due box orizzontali 16:9 impilati (PRIMA sopra, DOPO sotto), centrati nello spazio.
+  const boxesH = boxH*2 + vgap;
+  const extra = Math.max(0, avail - boxesH);
+  const boxYStart = y + extra/2;
   const items = [
-    { label:'PRIMA', img: photoPrima, hot:false },
-    { label:'DOPO',  img: photoDopo,  hot:true  },
+    { key:'prima', label:'PRIMA', img: photoPrima, hot:false },
+    { key:'dopo',  label:'DOPO',  img: photoDopo,  hot:true  },
   ];
+  pdRects = {};
   items.forEach((it, i) => {
-    const bx = x0 + i*(boxW+gap), by = s.boxY;
+    const bx = x0, by = boxYStart + i*(boxH+vgap);
+    pdRects[it.key] = { x:bx, y:by, w:boxW, h:boxH };
     ctx.fillStyle = COL.boxFill;
-    ctx.beginPath(); ctx.roundRect(bx, by, boxW, s.boxH, 28); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, radius); ctx.fill();
     if (it.img) {
-      coverImage(it.img, bx, by, boxW, s.boxH, 28);
+      coverImage(it.img, bx, by, boxW, boxH, radius, tf[it.key]);
     } else {
       ctx.save();
       ctx.globalAlpha = it.hot ? 1 : 0.5;
-      lashMotif(bx+boxW/2, by+s.boxH/2-40, 180);
+      lashMotif(bx+boxW/2, by+boxH/2-30, 180);
       ctx.restore();
       ctx.font = '400 28px Mont'; ctx.fillStyle = COL.muted;
       const ph = 'carica la foto';
-      ctx.fillText(ph, bx+(boxW-ctx.measureText(ph).width)/2, by+s.boxH/2+130);
+      ctx.fillText(ph, bx+(boxW-ctx.measureText(ph).width)/2, by+boxH/2+110);
     }
     ctx.strokeStyle = it.hot ? COL.gold : COL.muted;
     ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.roundRect(bx, by, boxW, s.boxH, 28); ctx.stroke();
+    ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, radius); ctx.stroke();
     ctx.font = '600 36px Mont';
     const lw = ctx.measureText(it.label).width;
     const tagW = lw+64, tagH = 64;
-    const tx = bx+(boxW-tagW)/2, ty = by-32;
+    const tx = bx+28, ty = by+22;
     ctx.fillStyle = it.hot ? COL.gold : '#D9C9B2';
     ctx.beginPath(); ctx.roundRect(tx, ty, tagW, tagH, tagH/2); ctx.fill();
     ctx.fillStyle = it.hot ? '#FFF' : COL.brown;
     ctx.fillText(it.label, tx+32, ty+45);
   });
+  y = boxYStart + items.length*boxH + (items.length-1)*vgap + GAP.afterBoxes;
 
-  const l1 = $('p_line1'), l2 = $('p_line2');
-  if (l1) { const sz = fitFont(l1,'400',38,960,0); centerText(l1, s.line1, '400 '+sz+'px Mont', COL.brown); }
-  if (l2) { const sz = fitFont(l2,'400',38,960,0); centerText(l2, s.line2, '400 '+sz+'px Mont', COL.brown); }
-  const last = $('p_last');
-  if (last) centerText(last + '  \u2192', s.last, '500 34px Mont', COL.gold);
-  drawFooter(W, s.foot);
+  if (l1Txt) {
+    const sz = fitFont(l1Txt,'400',feed?32:38,960,0);
+    centerText(l1Txt, y, '400 '+sz+'px Mont', COL.brown);
+    y += GAP.afterLine1;
+  }
+  if (l2Txt) {
+    const sz = fitFont(l2Txt,'400',feed?32:38,960,0);
+    centerText(l2Txt, y, '400 '+sz+'px Mont', COL.brown);
+    y += GAP.afterLine2;
+  }
+  if (lastTxt) centerText(lastTxt + '  \u2192', y, '500 '+(feed?30:34)+'px Mont', COL.gold);
+
+  drawFooter(W, H - GAP.footPad);
+}
+
+function drawRisultato(W, H) {
+  // Box unico col risultato finale. Titolo + box + righe formano un blocco
+  // coeso, centrato verticalmente nello spazio tra top e footer.
+  const feed = format === 'feed';
+  const radius = 28;
+  const GAP = feed
+    ? { afterEyebrow:56, afterTitle:56, afterBox:60, afterLine1:52, footPad:60, headroom:150 }
+    : { afterEyebrow:64, afterTitle:70, afterBox:80, afterLine1:60, footPad:110, headroom:230 };
+
+  const ebTxt = $('r_eyebrow');
+  const tTxt = $('r_title');
+  let titleSz = 0;
+  if (tTxt) { const st = feed?68:80; ctx.font = '300 '+st+'px Mont'; titleSz = fitFont(tTxt.toUpperCase(),'300',st,940,10); }
+  const l1Txt = $('r_line1'), l2Txt = $('r_line2');
+
+  // Dimensione box: larghezza a margine, 16:9.
+  const sideMargin = 60;
+  const boxW = Math.round(W - sideMargin*2);
+  const boxH = Math.round(boxW * 9 / 16);
+  const x0 = sideMargin;
+
+  // Altezza totale del blocco (eyebrow + titolo + box + righe).
+  const blockH =
+      (ebTxt ? 32 + GAP.afterEyebrow : 0)
+    + (tTxt ? titleSz + GAP.afterTitle : 0)
+    + boxH
+    + (l1Txt ? GAP.afterBox + 30 : 0)
+    + (l2Txt ? GAP.afterLine1 : 0);
+
+  // Area utile tra la testa pagina e il footer; centra il blocco al suo interno.
+  const areaTop = GAP.headroom;
+  const areaBot = H - GAP.footPad - 60;
+  let y = areaTop + Math.max(0, (areaBot - areaTop - blockH) / 2);
+
+  if (ebTxt) {
+    centerText(ebTxt.toUpperCase(), y + 26, '500 '+(feed?28:32)+'px Mont', COL.gold, 12);
+    y += 32 + GAP.afterEyebrow;
+  }
+  if (tTxt) {
+    centerText(tTxt.toUpperCase(), y + titleSz*0.75, '300 '+titleSz+'px Mont', COL.brown, 10);
+    y += titleSz + GAP.afterTitle;
+  }
+
+  const bx = x0, by = y;
+  pdRects = { ris: { x:bx, y:by, w:boxW, h:boxH } };
+  ctx.fillStyle = COL.boxFill;
+  ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, radius); ctx.fill();
+  if (photoRis) {
+    coverImage(photoRis, bx, by, boxW, boxH, radius, tf.ris);
+  } else {
+    lashMotif(bx+boxW/2, by+boxH/2-30, 200);
+    ctx.font = '400 28px Mont'; ctx.fillStyle = COL.muted;
+    const ph = 'carica la foto';
+    ctx.fillText(ph, bx+(boxW-ctx.measureText(ph).width)/2, by+boxH/2+120);
+  }
+  ctx.strokeStyle = COL.gold; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, radius); ctx.stroke();
+  y = by + boxH + GAP.afterBox;
+
+  if (l1Txt) { const sz = fitFont(l1Txt,'400',feed?32:38,960,0); centerText(l1Txt, y, '400 '+sz+'px Mont', COL.brown); y += GAP.afterLine1; }
+  if (l2Txt) { const sz = fitFont(l2Txt,'400',feed?32:38,960,0); centerText(l2Txt, y, '400 '+sz+'px Mont', COL.brown); }
+
+  drawFooter(W, H - GAP.footPad);
+}
+
+function drawNewPost(W, H) {
+  // Sfondo: texture tenue con "new post" ripetuto in corsivo.
+  const raw = $('np_text') || 'new post';
+  const txt = raw + '   ';
+  ctx.save();
+  ctx.font = 'italic 500 62px ' + SERIF;
+  const tileW = ctx.measureText(txt).width;
+  const rowH = 110;
+  ctx.fillStyle = COL.goldSoft;
+  ctx.globalAlpha = 0.16;
+  for (let row = 0, y = 80; y < H + rowH; row++, y += rowH) {
+    const offset = (row % 2) * (tileW / 2);
+    for (let x = -tileW + offset; x < W; x += tileW) {
+      ctx.fillText(txt, x, y);
+    }
+  }
+  ctx.restore();
+
+  // Riquadro quadrato con corner marks dorati (niente tratteggio pieno).
+  const eb = $('np_eyebrow');
+  const hasEb = !!eb;
+  const margin = 100;
+  const boxW = W - margin*2;
+  const boxH = boxW; // quadrato 1:1
+  const bx = margin;
+  const by = hasEb ? 470 : (H - boxH) / 2 + 10;
+  const radius = 28;
+
+  // Titolo/invito in oro bold, appena sopra il bordo del box.
+  if (hasEb) {
+    const sz = fitFont(eb.toUpperCase(), '700', 62, 900, 4);
+    centerText(eb.toUpperCase(), by - 44, '700 ' + sz + 'px Mont', COL.gold, 4);
+  }
+
+  ctx.save();
+  ctx.shadowColor = 'rgba(90,66,42,0.24)';
+  ctx.shadowBlur = 55; ctx.shadowOffsetY = 22;
+  ctx.fillStyle = COL.cream;
+  ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, radius); ctx.fill();
+  ctx.restore();
+
+  cornerMarks(bx, by, boxW, boxH, 66, COL.gold);
+
+  // Icona + testo guida al centro del riquadro.
+  const cx = bx + boxW/2, cy = by + boxH/2;
+  lashMotif(cx, cy - 40, 190);
+  ctx.font = 'italic 400 40px ' + SERIF; ctx.fillStyle = COL.muted;
+  const g = 'il post va qui';
+  ctx.fillText(g, cx - ctx.measureText(g).width/2, cy + 130);
+
+  drawFooter(W, H - 110);
+}
+
+function drawCover(W, H) {
+  // Copertina highlight: immagine quadrata, IG ne ritaglia un cerchio centrale.
+  // Solo icona centrata (il nome dell'highlight si scrive su Instagram).
+  if (coverBg === 'gold') {
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0, COL.goldSoft); g.addColorStop(1, COL.gold);
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  } else if (coverBg === 'brown') {
+    ctx.fillStyle = COL.brown; ctx.fillRect(0,0,W,H);
+    const rg = ctx.createRadialGradient(W/2,H/2,0,W/2,H/2,W*0.62);
+    rg.addColorStop(0,'rgba(176,133,74,0.22)'); rg.addColorStop(1,'rgba(176,133,74,0)');
+    ctx.fillStyle = rg; ctx.fillRect(0,0,W,H);
+  } else {
+    const g = ctx.createLinearGradient(0,0,0,H);
+    g.addColorStop(0, COL.bgTop); g.addColorStop(1, COL.bgBot);
+    ctx.fillStyle = g; ctx.fillRect(0,0,W,H);
+  }
+
+  let iconCol, ringCol;
+  if (coverBg === 'gold')       { iconCol = COL.cream; ringCol = 'rgba(255,255,255,0.5)'; }
+  else if (coverBg === 'brown') { iconCol = COL.gold;  ringCol = 'rgba(176,133,74,0.55)'; }
+  else                          { iconCol = COL.gold;  ringCol = 'rgba(176,133,74,0.45)'; }
+
+  const cx = W/2, cy = H/2;
+
+  // Anello sottile che suggerisce il cerchio ritagliato da Instagram.
+  ctx.save();
+  ctx.strokeStyle = ringCol; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.arc(cx, cy, W*0.34, 0, Math.PI*2); ctx.stroke();
+  ctx.restore();
+
+  // Icona centrata (dentro la safe-zone).
+  drawIcon(coverIcon, cx, cy, W*0.30, iconCol);
 }
 
 function draw() {
-  const W = 1080, H = format==='feed' ? 1350 : 1920;
+  const W = 1080;
+  const H = template==='cover' ? 1080 : (format==='feed' ? 1350 : 1920);
   cv.width = W; cv.height = H;
+  if (template === 'cover') { drawCover(W, H); return; }
   bg(W, H);
   if (template === 'offerta') drawOfferta(W, H);
   else if (template === 'listino') drawListino(W, H);
+  else if (template === 'newpost') drawNewPost(W, H);
+  else if (template === 'risultato') drawRisultato(W, H);
   else drawPd(W, H);
 }
 
@@ -395,16 +982,27 @@ document.querySelectorAll('#tpl button').forEach(b => b.addEventListener('click'
   document.getElementById('fieldsOfferta').classList.toggle('hidden', template!=='offerta');
   document.getElementById('fieldsListino').classList.toggle('hidden', template!=='listino');
   document.getElementById('fieldsPd').classList.toggle('hidden', template!=='pd');
-  if (template === 'listino' && format === 'feed') {
+  document.getElementById('fieldsRisultato').classList.toggle('hidden', template!=='risultato');
+  document.getElementById('fieldsNewPost').classList.toggle('hidden', template!=='newpost');
+  document.getElementById('fieldsCover').classList.toggle('hidden', template!=='cover');
+  document.getElementById('footerField').classList.toggle('hidden', template==='cover');
+  // Il selettore formato non serve per le copertine (formato fisso 1080x1080).
+  document.getElementById('fmtField').classList.toggle('hidden', template==='cover');
+  if ((template === 'listino' || template === 'newpost') && format === 'feed') {
     document.querySelectorAll('#fmt button').forEach(x=>x.classList.remove('active'));
     document.querySelector('#fmt button[data-f=story]').classList.add('active');
     format = 'story';
   }
   draw();
 }));
+document.getElementById('cv_icon').addEventListener('change', e => { coverIcon = e.target.value; draw(); });
+document.querySelectorAll('#cvBg button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#cvBg button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active'); coverBg = b.dataset.b; draw();
+}));
 document.querySelectorAll('input[type=text]').forEach(i => i.addEventListener('input', draw));
 
-function hookUpload(boxId, inputId, setter) {
+function hookUpload(boxId, inputId, setter, zoomRowId) {
   const box = document.getElementById(boxId);
   const input = document.getElementById(inputId);
   box.addEventListener('click', () => input.click());
@@ -412,19 +1010,82 @@ function hookUpload(boxId, inputId, setter) {
     const file = input.files[0];
     if (!file) return;
     const img = new Image();
-    img.onload = () => { setter(img); box.classList.add('loaded'); box.childNodes[0].textContent = file.name + ' \u2713 '; draw(); };
+    img.onload = () => {
+      setter(img);
+      box.classList.add('loaded');
+      box.childNodes[0].textContent = file.name + ' \u2713 ';
+      if (zoomRowId) document.getElementById(zoomRowId).classList.add('show');
+      draw();
+    };
     img.src = URL.createObjectURL(file);
   });
 }
-hookUpload('boxPrima','imgPrima', img => photoPrima = img);
-hookUpload('boxDopo','imgDopo', img => photoDopo = img);
+hookUpload('boxPrima','imgPrima', img => photoPrima = img, 'zoomPrima');
+hookUpload('boxDopo','imgDopo', img => photoDopo = img, 'zoomDopo');
+hookUpload('boxRis','imgRis', img => photoRis = img, 'zoomRis');
+
+// Slider zoom -> aggiorna transform e ridisegna.
+document.getElementById('zPrima').addEventListener('input', e => { tf.prima.zoom = parseFloat(e.target.value); draw(); });
+document.getElementById('zDopo').addEventListener('input', e => { tf.dopo.zoom = parseFloat(e.target.value); draw(); });
+document.getElementById('zRis').addEventListener('input', e => { tf.ris.zoom = parseFloat(e.target.value); draw(); });
+
+// Drag della foto dentro il box (Prima/Dopo): sposta l'offset normalizzato.
+let dragKey = null, dragStart = null;
+function canvasPoint(evt) {
+  const r = cv.getBoundingClientRect();
+  const p = evt.touches ? evt.touches[0] : evt;
+  return {
+    x: (p.clientX - r.left) * (cv.width / r.width),
+    y: (p.clientY - r.top) * (cv.height / r.height),
+  };
+}
+function hitBox(pt) {
+  for (const key of Object.keys(pdRects)) {
+    const b = pdRects[key];
+    if (pt.x >= b.x && pt.x <= b.x+b.w && pt.y >= b.y && pt.y <= b.y+b.h) return key;
+  }
+  return null;
+}
+function dragMove(evt) {
+  if (!dragKey) return;
+  evt.preventDefault();
+  const pt = canvasPoint(evt);
+  const b = pdRects[dragKey];
+  if (!b) return;
+  // Converte lo spostamento in delta di offset normalizzato (2 = intero range -1..1).
+  const dx = (pt.x - dragStart.x) / (b.w/2);
+  const dy = (pt.y - dragStart.y) / (b.h/2);
+  tf[dragKey].ox = clamp(dragStart.ox + dx, -1, 1);
+  tf[dragKey].oy = clamp(dragStart.oy + dy, -1, 1);
+  draw();
+}
+function dragEnd() { dragKey = null; }
+function clamp(v, lo, hi) { return Math.max(lo, Math.min(hi, v)); }
+function dragDown(evt) {
+  if (template !== 'pd' && template !== 'risultato') return;
+  const pt = canvasPoint(evt);
+  const key = hitBox(pt);
+  const photoFor = { prima: photoPrima, dopo: photoDopo, ris: photoRis };
+  if (!key || !photoFor[key]) return;
+  evt.preventDefault();
+  dragKey = key;
+  dragStart = { x: pt.x, y: pt.y, ox: tf[key].ox, oy: tf[key].oy };
+}
+cv.addEventListener('mousedown', dragDown);
+window.addEventListener('mousemove', dragMove);
+window.addEventListener('mouseup', dragEnd);
+cv.addEventListener('touchstart', dragDown, { passive:false });
+cv.addEventListener('touchmove', dragMove, { passive:false });
+window.addEventListener('touchend', dragEnd);
 
 // In iOS standalone mode Safari ignores clicks on <a download>:
 // go through the Web Share API instead, which saves straight to Photos.
 const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
 document.getElementById('download').addEventListener('click', () => {
-  const name = 'creative_' + template + '_' + format + '.png';
+  const name = template === 'cover'
+    ? 'copertina_' + coverIcon + '.png'
+    : 'creative_' + template + '_' + format + '.png';
   cv.toBlob(blob => {
     if (!blob) return;
     const file = new File([blob], name, { type: 'image/png' });
