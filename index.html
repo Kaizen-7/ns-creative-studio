@@ -120,6 +120,10 @@
       <input type="text" id="p_eyebrow" value="RISULTATI REALI">
       <label>Titolo</label>
       <input type="text" id="p_title" value="Laminazione ciglia">
+      <div class="zoomrow show" id="rowBoxH">
+        <span>altezza riquadri</span>
+        <input type="range" id="p_boxH" min="1.78" max="3" step="0.01" value="1.78">
+      </div>
       <label>Foto PRIMA</label>
       <div class="filebox" id="boxPrima">tocca per caricare la foto<input type="file" id="imgPrima" accept="image/*"></div>
       <div class="zoomrow" id="zoomPrima">
@@ -217,6 +221,8 @@ const ctx = cv.getContext('2d');
 let format = 'feed', template = 'offerta';
 let photoPrima = null, photoDopo = null, photoRis = null;
 let coverIcon = 'chat';
+// Rapporto larghezza/altezza dei riquadri Prima/Dopo: 1.78 = 16:9 (default), fino a 3 = piatto.
+let pdBoxAspect = 16/9;
 // Per-photo transform: zoom (scala aggiuntiva) e offset normalizzato (-1..1) rispetto al box.
 const tf = {
   prima: { zoom: 1, ox: 0, oy: 0 },
@@ -727,12 +733,17 @@ function drawPd(W, H) {
   // Larghezza fissa: box con margine laterale che dà respiro (~5.5% della larghezza).
   const sideMargin = 60;
   const boxW = W - sideMargin*2;
-  // Altezza ideale 16:9, ma se non entra la si abbassa (rapporto piu' panoramico).
-  const idealH = boxW * 9 / 16;
+  // Altezza dei riquadri: rapportata allo slider "Altezza riquadri" (1.78=16:9 .. 3=piatto).
+  // Se non entra viene comunque limitata dallo spazio disponibile.
+  const idealH = boxW / pdBoxAspect;
   const maxBoxH = (avail - GAP.boxGap) / 2;
   const boxH = Math.round(Math.min(idealH, maxBoxH));
   const x0 = sideMargin;
-  const vgap = GAP.boxGap;
+  // Spaziatura adattiva: lo spazio libero attorno ai box viene distribuito fra
+  // margine sopra, gap centrale e margine sotto in modo proporzionale, cosi' quando
+  // i riquadri si abbassano le distanze restano equilibrate (gap limitato per non esagerare).
+  const leftover = Math.max(0, avail - boxH*2);
+  const vgap = Math.round(Math.max(GAP.boxGap, Math.min(GAP.boxGap * 2.5, leftover / 3)));
 
   let y = GAP.top;
 
@@ -746,7 +757,7 @@ function drawPd(W, H) {
     y += titleSz*0.5 + GAP.afterTitle;
   }
 
-  // Due box orizzontali 16:9 impilati (PRIMA sopra, DOPO sotto), centrati nello spazio.
+  // Due box orizzontali impilati (PRIMA sopra, DOPO sotto), centrati nello spazio.
   const boxesH = boxH*2 + vgap;
   const extra = Math.max(0, avail - boxesH);
   const boxYStart = y + extra/2;
@@ -1004,6 +1015,7 @@ hookUpload('boxRis','imgRis', img => photoRis = img, 'zoomRis');
 document.getElementById('zPrima').addEventListener('input', e => { tf.prima.zoom = parseFloat(e.target.value); draw(); });
 document.getElementById('zDopo').addEventListener('input', e => { tf.dopo.zoom = parseFloat(e.target.value); draw(); });
 document.getElementById('zRis').addEventListener('input', e => { tf.ris.zoom = parseFloat(e.target.value); draw(); });
+document.getElementById('p_boxH').addEventListener('input', e => { pdBoxAspect = parseFloat(e.target.value); draw(); });
 
 // Drag della foto dentro il box (Prima/Dopo): sposta l'offset normalizzato.
 let dragKey = null, dragStart = null;
