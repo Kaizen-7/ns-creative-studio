@@ -58,6 +58,26 @@ test('feed label chips anchor across the bottom-right photo border', () => {
   assert.equal(dopo.y + dopo.h/2, 900);
 });
 
+test('circle labels split to opposite sides so the before chip avoids the overlap', () => {
+  const computePdChipRect = loadFunction('computePdChipRect');
+  const spacing = loadFunction('computePdSpacing')(true);
+
+  const prima = computePdChipRect({
+    boxX: 130, boxY: 220, boxW: 500, boxH: 500,
+    labelW: 85, padX: spacing.chipPadX,
+    height: spacing.chipHeight, rightInset: 22, side: 'left',
+  });
+  const dopo = computePdChipRect({
+    boxX: 450, boxY: 586, boxW: 500, boxH: 500,
+    labelW: 76, padX: spacing.chipPadX,
+    height: spacing.chipHeight, rightInset: 22, side: 'right',
+  });
+
+  assert.equal(prima.x, 152);
+  assert.equal(dopo.x, 812);
+  assert.ok(prima.x + prima.w < dopo.x);
+});
+
 test('story photos reclaim label space while keeping room for anchored chips', () => {
   const computePdPhotoLayout = loadFunction('computePdPhotoLayout');
   const spacing = loadFunction('computePdSpacing')(false);
@@ -155,4 +175,68 @@ test('feed height control changes the photos across its full range', () => {
   assert.equal(tall.photoH, 429);
   assert.ok(compact.firstLabelY > tall.firstLabelY);
   assert.ok(compact.secondLabelY > tall.secondLabelY);
+});
+
+test('pinch distance scales photo zoom in both directions within safe limits', () => {
+  const computePinchZoom = loadFunction('computePinchZoom');
+
+  assert.equal(computePinchZoom({
+    startZoom: 1,
+    startDistance: 100,
+    currentDistance: 180,
+  }), 1.8);
+  assert.equal(computePinchZoom({
+    startZoom: 1,
+    startDistance: 100,
+    currentDistance: 40,
+  }), 0.6);
+  assert.equal(computePinchZoom({
+    startZoom: 2,
+    startDistance: 100,
+    currentDistance: 200,
+  }), 3);
+});
+
+test('photo styles derive distinct hit areas from the same before-after slots', () => {
+  const computePdStyleGeometry = loadFunction('computePdStyleGeometry');
+  const input = {
+    style: 'classic',
+    boxX: 45,
+    boxW: 990,
+    boxH: 405,
+    firstY: 220,
+    secondY: 681,
+  };
+
+  const classic = computePdStyleGeometry({ ...input, classicShape: 'rect', feed: true });
+  const classicSquare = computePdStyleGeometry({ ...input, classicShape: 'square', feed: true });
+  const oval = computePdStyleGeometry({ ...input, style: 'oval', feed: true });
+  const storyOval = computePdStyleGeometry({ ...input, style: 'oval', feed: false });
+  const circles = computePdStyleGeometry({ ...input, style: 'circles' });
+
+  assert.deepEqual({ ...classic.prima }, { x:45, y:220, w:990, h:405, shape:'roundRect' });
+  assert.deepEqual({ ...classicSquare.prima }, { x:45, y:220, w:547, h:405, shape:'roundRect' });
+  assert.deepEqual({ ...classicSquare.dopo }, { x:488, y:681, w:547, h:405, shape:'roundRect' });
+  assert.deepEqual({ ...oval.prima }, { x:160, y:220, w:760, h:405, shape:'ellipse' });
+  assert.deepEqual({ ...storyOval.prima }, { x:105, y:220, w:870, h:405, shape:'ellipse' });
+  assert.deepEqual({ ...circles.prima }, { x:130, y:220, w:500, h:500, shape:'ellipse' });
+  assert.deepEqual({ ...circles.dopo }, { x:450, y:586, w:500, h:500, shape:'ellipse' });
+});
+
+test('photo underfill keeps a blurred cover layer behind the zoomed image', () => {
+  const computeImageDrawRect = loadFunction('computeImageDrawRect');
+  const box = { x:100, y:200, w:800, h:400 };
+
+  const background = computeImageDrawRect({
+    imageW: 712, imageH: 419, ...box, zoom: 1.12, ox: 0, oy: 0,
+  });
+  const foreground = computeImageDrawRect({
+    imageW: 712, imageH: 419, ...box, zoom: 0.6, ox: 0, oy: 0,
+  });
+
+  assert.ok(background.w >= box.w);
+  assert.ok(background.h >= box.h);
+  assert.ok(foreground.w < box.w || foreground.h < box.h);
+  assert.equal(foreground.x + foreground.w/2, box.x + box.w/2);
+  assert.equal(foreground.y + foreground.h/2, box.y + box.h/2);
 });

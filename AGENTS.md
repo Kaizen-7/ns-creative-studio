@@ -49,7 +49,7 @@ Template attuali:
 | `offerta`   | `fieldsOfferta`   | `drawOfferta`   | promo con prezzo barrato |
 | `listino`   | `fieldsListino`   | `drawListino`   | forza formato Story |
 | `listinoprezzi` | `fieldsListinoPrezzi` | `drawPriceList` | Story fissa; categorie e servizi dinamici, layout adattivo con blocco download in overflow |
-| `pd`        | `fieldsPd`        | `drawPd`        | Prima/Dopo, foto 16:9 impilate, drag+zoom, layout fluido a cursore Y |
+| `pd`        | `fieldsPd`        | `drawPd`        | Prima/Dopo con 3 stili foto, doppia proporzione Classico, sfondo blur, drag+zoom e layout fluido a cursore Y |
 | `risultato` | `fieldsRisultato` | `drawRisultato` | box unico 16:9 col risultato finale, drag+zoom, blocco centrato verticalmente |
 | `newpost`   | `fieldsNewPost`   | `drawNewPost`   | forza Story; texture "new post" in corsivo (SERIF) + riquadro con corner marks + titolo oro bold sopra il box |
 | `cover`     | `fieldsCover`     | `drawCover`     | formato fisso 1080×1080; copertina highlight: solo icona centrata nel cerchio IG; sfondo chiaro fisso, 26 icone via dropdown |
@@ -93,6 +93,8 @@ ratio generico: i formati sono questi due fissi.
 - `fitFont(text, weight, startSize, maxW, tracking)` — riduce il font finché entra in `maxW`.
 - `coverImage(img, x, y, w, h, radius, transform)` — clip rounded-rect + object-fit cover.
   `transform = { zoom, ox, oy }` (ox/oy offset normalizzato -1..1, zoom scala aggiuntiva).
+- `drawPhotoLayers(img, rect, transform)` — per il Prima/Dopo: copia cover sfocata dietro
+  alla foto nitida, così lo zoom sotto 1× non lascia spazi vuoti.
 - `bg`, `drawFooter`, `pin`, `lashMotif`, `hairline`, `priceBlock`.
 - `$(id)` = `getElementById(id).value` (attenzione: **esplode se l'id non esiste**; tutti i
   campi devono essere sempre nel DOM, anche se `.hidden`).
@@ -103,7 +105,9 @@ ratio generico: i formati sono questi due fissi.
   usati per l'hit-test del drag.
 - Drag: listener mouse+touch sul canvas → `dragDown/dragMove/dragEnd` aggiornano `tf[key].ox/oy`.
   Attivo quando `template === 'pd' || 'risultato'` e la foto del box è caricata.
-- Zoom: slider `#zPrima`/`#zDopo`/`#zRis` (mostrati con `.show` dopo l'upload) → `tf[key].zoom`.
+- Zoom: pinch a due dita o slider `#zPrima`/`#zDopo`/`#zRis` (mostrati con `.show` dopo
+  l'upload) → `tf[key].zoom`, con range 0.6–3. Sotto 1 la foto può lasciare un passe-partout
+  nude dentro il box; pinch e slider restano sincronizzati.
 
 ## Convenzioni
 

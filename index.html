@@ -152,6 +152,19 @@
       <input type="text" id="p_eyebrow" value="RISULTATI REALI">
       <label>Titolo</label>
       <input type="text" id="p_title" value="Laminazione ciglia">
+      <label>Stile foto</label>
+      <div class="toggle" id="pdPhotoStyle">
+        <button type="button" data-style="classic">Classico</button>
+        <button type="button" data-style="oval" class="active">Ovali</button>
+        <button type="button" data-style="circles">Cerchi</button>
+      </div>
+      <div class="size-control hidden" id="rowClassicShape">
+        <label>Proporzioni classico</label>
+        <div class="toggle" id="pdClassicShape">
+          <button type="button" data-shape="square">Più quadrati</button>
+          <button type="button" data-shape="rect" class="active">Rettangolari</button>
+        </div>
+      </div>
       <div class="size-control" id="rowBoxH">
         <label for="p_boxH">Altezza foto</label>
         <input type="range" id="p_boxH" min="0" max="100" step="1" value="80" aria-label="Altezza foto">
@@ -161,13 +174,13 @@
       <div class="filebox" id="boxPrima">tocca per caricare la foto<input type="file" id="imgPrima" accept="image/*"></div>
       <div class="zoomrow" id="zoomPrima">
         <span>zoom</span>
-        <input type="range" id="zPrima" min="1" max="3" step="0.01" value="1">
+        <input type="range" id="zPrima" min="0.6" max="3" step="0.01" value="1">
       </div>
       <label>Foto DOPO</label>
       <div class="filebox" id="boxDopo">tocca per caricare la foto<input type="file" id="imgDopo" accept="image/*"></div>
       <div class="zoomrow" id="zoomDopo">
         <span>zoom</span>
-        <input type="range" id="zDopo" min="1" max="3" step="0.01" value="1">
+        <input type="range" id="zDopo" min="0.6" max="3" step="0.01" value="1">
       </div>
       <label>Riga 1 sotto le foto</label>
       <input type="text" id="p_line1" value="Nessuna extension. Nessun mascara.">
@@ -186,7 +199,7 @@
       <div class="filebox" id="boxRis">tocca per caricare la foto<input type="file" id="imgRis" accept="image/*"></div>
       <div class="zoomrow" id="zoomRis">
         <span>zoom</span>
-        <input type="range" id="zRis" min="1" max="3" step="0.01" value="1">
+        <input type="range" id="zRis" min="0.6" max="3" step="0.01" value="1">
       </div>
       <label>Riga 1 sotto la foto</label>
       <input type="text" id="r_line1" value="Effetto naturale che dura settimane.">
@@ -244,7 +257,7 @@
 
   <div class="preview">
     <canvas id="cv" width="1080" height="1350"></canvas>
-    <div class="hint" id="previewHint">Prima/Dopo: trascina la foto nel riquadro per spostarla, usa lo slider per lo zoom. Campo vuoto = elemento nascosto.</div>
+    <div class="hint" id="previewHint">Prima/Dopo: trascina con un dito, usa il pinch a due dita o lo slider per lo zoom. Campo vuoto = elemento nascosto.</div>
   </div>
 </div>
 
@@ -279,6 +292,10 @@ let priceListCategories = [
 ];
 // Altezza relativa dei riquadri Prima/Dopo: 0 = compatta, 1 = massima disponibile.
 let pdBoxHeight = 0.8;
+// Variante visuale del Prima/Dopo; si sceglie in base al taglio delle foto.
+let pdPhotoStyle = 'oval';
+// Proporzione dei box nello stile Classico.
+let pdClassicShape = 'rect';
 // Per-photo transform: zoom (scala aggiuntiva) e offset normalizzato (-1..1) rispetto al box.
 const tf = {
   prima: { zoom: 1, ox: 0, oy: 0 },
@@ -685,21 +702,71 @@ function priceBlock(W, yTop, oldT, newT, big) {
   }
 }
 
-function coverImage(img, x, y, w, h, radius, transform) {
-  const t = transform || { zoom: 1, ox: 0, oy: 0 };
-  ctx.save();
-  ctx.beginPath(); ctx.roundRect(x, y, w, h, radius); ctx.clip();
-  const ir = img.width/img.height, br = w/h;
+function computeImageDrawRect({ imageW, imageH, x, y, w, h, zoom = 1, ox = 0, oy = 0 }) {
+  const ir = imageW/imageH, br = w/h;
   let dw, dh;
   if (ir > br) { dh = h; dw = h*ir; } else { dw = w; dh = w/ir; }
-  // Applica zoom aggiuntivo.
-  dw *= t.zoom; dh *= t.zoom;
+  dw *= zoom; dh *= zoom;
   // Offset: quanto spazio "extra" ho oltre al box, spostabile con ox/oy in [-1,1].
   const slackX = Math.max(0, dw - w) / 2;
   const slackY = Math.max(0, dh - h) / 2;
-  const dx = x + (w - dw)/2 + t.ox * slackX;
-  const dy = y + (h - dh)/2 + t.oy * slackY;
-  ctx.drawImage(img, dx, dy, dw, dh);
+  return {
+    x: x + (w - dw)/2 + ox * slackX,
+    y: y + (h - dh)/2 + oy * slackY,
+    w: dw,
+    h: dh,
+  };
+}
+
+function tracePhotoShape(rect, radius = 28) {
+  ctx.beginPath();
+  if (rect.shape === 'ellipse') {
+    ctx.ellipse(rect.x + rect.w/2, rect.y + rect.h/2, rect.w/2, rect.h/2, 0, 0, Math.PI*2);
+  } else {
+    const r = rect.shape === 'capsule' ? Math.min(rect.w, rect.h)/2 : radius;
+    ctx.roundRect(rect.x, rect.y, rect.w, rect.h, r);
+  }
+}
+
+function drawPhotoLayers(img, rect, transform, radius = 28) {
+  const t = transform || { zoom:1, ox:0, oy:0 };
+  ctx.save();
+  tracePhotoShape(rect, radius);
+  ctx.clip();
+
+  // Come nelle Story: una copia della foto riempie lo sfondo e viene sfocata;
+  // la foto regolabile resta nitida sopra e può essere ridotta fino a 0.6x.
+  const blurRect = computeImageDrawRect({
+    imageW:img.width, imageH:img.height,
+    x:rect.x, y:rect.y, w:rect.w, h:rect.h,
+    zoom:1.12, ox:0, oy:0,
+  });
+  ctx.filter = 'blur(34px) saturate(0.86) brightness(0.82)';
+  ctx.globalAlpha = 0.88;
+  ctx.drawImage(img, blurRect.x, blurRect.y, blurRect.w, blurRect.h);
+
+  const photoRect = computeImageDrawRect({
+    imageW:img.width, imageH:img.height,
+    x:rect.x, y:rect.y, w:rect.w, h:rect.h,
+    zoom:t.zoom, ox:t.ox, oy:t.oy,
+  });
+  ctx.filter = 'none';
+  ctx.globalAlpha = 1;
+  ctx.drawImage(img, photoRect.x, photoRect.y, photoRect.w, photoRect.h);
+  ctx.restore();
+}
+
+function coverImage(img, x, y, w, h, radius, transform) {
+  const rect = { x, y, w, h, shape:'roundRect' };
+  ctx.save();
+  tracePhotoShape(rect, radius);
+  ctx.clip();
+  const t = transform || { zoom:1, ox:0, oy:0 };
+  const drawRect = computeImageDrawRect({
+    imageW:img.width, imageH:img.height, x, y, w, h,
+    zoom:t.zoom, ox:t.ox, oy:t.oy,
+  });
+  ctx.drawImage(img, drawRect.x, drawRect.y, drawRect.w, drawRect.h);
   ctx.restore();
 }
 
@@ -930,10 +997,10 @@ function computePdHeaderTop({ feed, height }) {
   return Math.round(120 - heightAmount * 48);
 }
 
-function computePdChipRect({ boxX, boxY, boxW, boxH, labelW, padX, height, rightInset }) {
+function computePdChipRect({ boxX, boxY, boxW, boxH, labelW, padX, height, rightInset, side = 'right' }) {
   const w = Math.ceil(labelW + padX*2);
   return {
-    x: boxX + boxW - rightInset - w,
+    x: side === 'left' ? boxX + rightInset : boxX + boxW - rightInset - w,
     y: boxY + boxH - height/2,
     w,
     h: height,
@@ -956,6 +1023,31 @@ function computePdSpacing(feed) {
         chipHeight:44, chipPadX:22, chipRightInset:48,
         freeTopShare:0.30, freeMiddleShare:0.40, freeBottomShare:0.30,
       };
+}
+
+function computePdStyleGeometry({ style, boxX, boxW, boxH, firstY, secondY, feed = false, classicShape = 'rect' }) {
+  if (style === 'oval') {
+    const inset = feed ? 115 : 60;
+    return {
+      prima:{ x:boxX+inset, y:firstY, w:boxW-inset*2, h:boxH, shape:'ellipse' },
+      dopo:{ x:boxX+inset, y:secondY, w:boxW-inset*2, h:boxH, shape:'ellipse' },
+    };
+  }
+  if (style === 'circles') {
+    const diameter = Math.min(500, boxW*0.52);
+    const sideInset = 85;
+    return {
+      prima:{ x:boxX+sideInset, y:firstY, w:diameter, h:diameter, shape:'ellipse' },
+      dopo:{ x:boxX+boxW-diameter-sideInset, y:secondY+boxH-diameter, w:diameter, h:diameter, shape:'ellipse' },
+    };
+  }
+  const classicW = classicShape === 'square' ? Math.min(boxW, Math.round(boxH*1.35)) : boxW;
+  const primaX = boxX;
+  const dopoX = classicShape === 'square' ? boxX + boxW - classicW : boxX;
+  return {
+    prima:{ x:primaX, y:firstY, w:classicW, h:boxH, shape:'roundRect' },
+    dopo:{ x:dopoX, y:secondY, w:classicW, h:boxH, shape:'roundRect' },
+  };
 }
 
 function drawPd(W, H) {
@@ -1017,44 +1109,33 @@ function drawPd(W, H) {
   }
 
   // Le chip sono agganciate alla linea inferiore delle foto in entrambi i formati.
+  const geometry = computePdStyleGeometry({
+    style:pdPhotoStyle,
+    boxX:x0,
+    boxW,
+    boxH,
+    firstY:layout.firstPhotoY,
+    secondY:layout.secondPhotoY,
+    feed,
+    classicShape:pdClassicShape,
+  });
   const items = [
-    { key:'prima', label:'PRIMA', img: photoPrima, hot:false, photoY:layout.firstPhotoY },
-    { key:'dopo',  label:'DOPO',  img: photoDopo,  hot:true,  photoY:layout.secondPhotoY },
+    { key:'prima', label:'PRIMA', img:photoPrima, hot:false, box:geometry.prima },
+    { key:'dopo',  label:'DOPO',  img:photoDopo,  hot:true,  box:geometry.dopo },
   ];
   pdRects = {};
-  items.forEach(it => {
-    const bx = x0, by = it.photoY;
-    const labelFont = '500 '+(feed?21:23)+'px Mont';
 
-    pdRects[it.key] = { x:bx, y:by, w:boxW, h:boxH };
-    ctx.fillStyle = COL.boxFill;
-    ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, radius); ctx.fill();
-    if (it.img) {
-      coverImage(it.img, bx, by, boxW, boxH, radius, tf[it.key]);
-    } else {
-      ctx.save();
-      ctx.globalAlpha = it.hot ? 1 : 0.5;
-      lashMotif(bx+boxW/2, by+boxH/2-30, 180);
-      ctx.restore();
-      ctx.font = '400 28px Mont'; ctx.fillStyle = COL.muted;
-      const ph = 'carica la foto';
-      ctx.fillText(ph, bx+(boxW-ctx.measureText(ph).width)/2, by+boxH/2+110);
-    }
-    ctx.strokeStyle = it.hot ? COL.gold : COL.muted;
-    ctx.lineWidth = 4;
-    ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, radius); ctx.stroke();
-
+  const drawItemChip = it => {
+    const { x:bx, y:by, w:bw, h:bh } = it.box;
     const tracking = feed ? 4 : 5;
-    ctx.font = labelFont;
+    ctx.font = '500 '+(feed?21:23)+'px Mont';
     const chip = computePdChipRect({
-      boxX: bx,
-      boxY: by,
-      boxW,
-      boxH,
-      labelW: trackWidth(it.label, tracking),
-      padX: GAP.chipPadX,
-      height: GAP.chipHeight,
-      rightInset: GAP.chipRightInset,
+      boxX:bx, boxY:by, boxW:bw, boxH:bh,
+      labelW:trackWidth(it.label, tracking),
+      padX:GAP.chipPadX,
+      height:GAP.chipHeight,
+      rightInset:pdPhotoStyle === 'circles' ? 22 : GAP.chipRightInset,
+      side:pdPhotoStyle === 'circles' && it.key === 'prima' ? 'left' : 'right',
     });
     ctx.fillStyle = it.hot ? COL.gold : COL.cream;
     ctx.beginPath();
@@ -1071,7 +1152,62 @@ function drawPd(W, H) {
       ctx.fillText(ch, tx, chip.y + (feed?27:30));
       tx += ctx.measureText(ch).width + tracking;
     });
+  };
+
+  if (geometry.outer) {
+    ctx.fillStyle = COL.boxFill;
+    tracePhotoShape(geometry.outer);
+    ctx.fill();
+    ctx.save();
+    tracePhotoShape(geometry.outer);
+    ctx.clip();
+  }
+
+  items.forEach(it => {
+    const { x:bx, y:by, w:bw, h:bh } = it.box;
+    pdRects[it.key] = { ...it.box };
+    if (!geometry.outer) {
+      ctx.fillStyle = COL.boxFill;
+      tracePhotoShape(it.box, radius);
+      ctx.fill();
+    }
+    if (it.img) {
+      drawPhotoLayers(it.img, it.box, tf[it.key], geometry.outer ? 0 : radius);
+    } else {
+      ctx.save();
+      tracePhotoShape(it.box, geometry.outer ? 0 : radius);
+      ctx.clip();
+      ctx.save();
+      ctx.globalAlpha = it.hot ? 1 : 0.5;
+      lashMotif(bx+bw/2, by+bh/2-30, Math.min(180, bw*0.28));
+      ctx.restore();
+      ctx.font = '400 28px Mont'; ctx.fillStyle = COL.muted;
+      const ph = 'carica la foto';
+      ctx.fillText(ph, bx+(bw-ctx.measureText(ph).width)/2, by+bh/2+110);
+      ctx.restore();
+    }
+    if (!geometry.outer) {
+      ctx.strokeStyle = it.hot ? COL.gold : COL.muted;
+      ctx.lineWidth = 4;
+      tracePhotoShape(it.box, radius);
+      ctx.stroke();
+    }
+
   });
+
+  if (geometry.outer) {
+    ctx.restore();
+    const splitY = geometry.dopo.y;
+    ctx.strokeStyle = COL.cream;
+    ctx.lineWidth = 8;
+    ctx.beginPath(); ctx.moveTo(geometry.outer.x, splitY); ctx.lineTo(geometry.outer.x+geometry.outer.w, splitY); ctx.stroke();
+    ctx.strokeStyle = COL.gold;
+    ctx.lineWidth = 4;
+    tracePhotoShape(geometry.outer);
+    ctx.stroke();
+  }
+  // Le chip restano sempre sopra entrambe le foto, anche nei cerchi sovrapposti.
+  items.forEach(drawItemChip);
   y = layout.contentY;
 
   if (l1Txt) {
@@ -1251,6 +1387,19 @@ document.querySelectorAll('#fmt button').forEach(b => b.addEventListener('click'
   document.querySelectorAll('#fmt button').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); format = b.dataset.f; draw();
 }));
+document.querySelectorAll('#pdPhotoStyle button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#pdPhotoStyle button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  pdPhotoStyle = b.dataset.style;
+  document.getElementById('rowClassicShape').classList.toggle('hidden', pdPhotoStyle !== 'classic');
+  draw();
+}));
+document.querySelectorAll('#pdClassicShape button').forEach(b => b.addEventListener('click', () => {
+  document.querySelectorAll('#pdClassicShape button').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  pdClassicShape = b.dataset.shape;
+  draw();
+}));
 document.querySelectorAll('#tpl button').forEach(b => b.addEventListener('click', () => {
   document.querySelectorAll('#tpl button').forEach(x=>x.classList.remove('active'));
   b.classList.add('active'); template = b.dataset.t;
@@ -1271,7 +1420,7 @@ document.querySelectorAll('#tpl button').forEach(b => b.addEventListener('click'
   }
   document.getElementById('previewHint').textContent = template === 'listinoprezzi'
     ? 'Listino prezzi: aggiungi categorie e servizi dal pannello. Il download si blocca se il contenuto non entra in modo leggibile.'
-    : 'Prima/Dopo: trascina la foto nel riquadro per spostarla, usa lo slider per lo zoom. Campo vuoto = elemento nascosto.';
+    : 'Prima/Dopo: trascina con un dito, usa il pinch a due dita o lo slider per lo zoom. Campo vuoto = elemento nascosto.';
   draw();
 }));
 document.getElementById('cv_icon').addEventListener('change', e => { coverIcon = e.target.value; draw(); });
@@ -1419,8 +1568,12 @@ document.getElementById('p_boxH').addEventListener('input', e => {
   draw();
 });
 
-// Drag della foto dentro il box (Prima/Dopo): sposta l'offset normalizzato.
-let dragKey = null, dragStart = null;
+// Drag e pinch della foto dentro il box.
+let dragKey = null, dragStart = null, pinchStart = null;
+function computePinchZoom({ startZoom, startDistance, currentDistance }) {
+  if (startDistance <= 0) return startZoom;
+  return Math.max(0.6, Math.min(3, startZoom * currentDistance / startDistance));
+}
 function canvasPoint(evt) {
   const r = cv.getBoundingClientRect();
   const p = evt.touches ? evt.touches[0] : evt;
@@ -1461,12 +1614,59 @@ function dragDown(evt) {
   dragKey = key;
   dragStart = { x: pt.x, y: pt.y, ox: tf[key].ox, oy: tf[key].oy };
 }
+function touchStart(evt) {
+  if (evt.touches.length < 2) {
+    pinchStart = null;
+    dragDown(evt);
+    return;
+  }
+  if (template !== 'pd' && template !== 'risultato') return;
+  const rect = cv.getBoundingClientRect();
+  const first = evt.touches[0], second = evt.touches[1];
+  const midpoint = {
+    x: ((first.clientX + second.clientX)/2 - rect.left) * (cv.width/rect.width),
+    y: ((first.clientY + second.clientY)/2 - rect.top) * (cv.height/rect.height),
+  };
+  const key = hitBox(midpoint);
+  const photoFor = { prima: photoPrima, dopo: photoDopo, ris: photoRis };
+  if (!key || !photoFor[key]) return;
+  evt.preventDefault();
+  dragKey = null;
+  pinchStart = {
+    key,
+    distance: Math.hypot(second.clientX-first.clientX, second.clientY-first.clientY),
+    zoom: tf[key].zoom,
+  };
+}
+function touchMove(evt) {
+  if (!pinchStart || evt.touches.length < 2) {
+    if (evt.touches.length === 1) dragMove(evt);
+    return;
+  }
+  evt.preventDefault();
+  const first = evt.touches[0], second = evt.touches[1];
+  const distance = Math.hypot(second.clientX-first.clientX, second.clientY-first.clientY);
+  const key = pinchStart.key;
+  tf[key].zoom = computePinchZoom({
+    startZoom: pinchStart.zoom,
+    startDistance: pinchStart.distance,
+    currentDistance: distance,
+  });
+  const sliderId = { prima:'zPrima', dopo:'zDopo', ris:'zRis' }[key];
+  document.getElementById(sliderId).value = tf[key].zoom;
+  draw();
+}
+function touchEnd(evt) {
+  if (evt.touches.length < 2) pinchStart = null;
+  dragEnd();
+}
 cv.addEventListener('mousedown', dragDown);
 window.addEventListener('mousemove', dragMove);
 window.addEventListener('mouseup', dragEnd);
-cv.addEventListener('touchstart', dragDown, { passive:false });
-cv.addEventListener('touchmove', dragMove, { passive:false });
-window.addEventListener('touchend', dragEnd);
+cv.addEventListener('touchstart', touchStart, { passive:false });
+cv.addEventListener('touchmove', touchMove, { passive:false });
+window.addEventListener('touchend', touchEnd);
+window.addEventListener('touchcancel', touchEnd);
 
 // In iOS standalone mode Safari ignores clicks on <a download>:
 // go through the Web Share API instead, which saves straight to Photos.
