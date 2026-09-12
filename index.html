@@ -41,6 +41,25 @@
   .zoomrow.show { display:flex; }
   .zoomrow span { font-size:11px; letter-spacing:.1em; text-transform:uppercase; color:var(--muted); flex:0 0 auto; }
   .zoomrow input[type=range] { flex:1; accent-color:var(--gold); height:22px; }
+  .size-control { margin:18px 0 16px; padding:13px 14px 11px; background:rgba(247,241,232,.72); border:1px solid #E3D5C3; border-radius:12px; }
+  .size-control label { margin:0 0 10px; }
+  .size-control input[type=range] { width:100%; height:18px; margin:0; appearance:none; -webkit-appearance:none; background:transparent; cursor:pointer; }
+  .size-control input[type=range]::-webkit-slider-runnable-track { height:4px; background:#DDCEBB; border-radius:999px; }
+  .size-control input[type=range]::-webkit-slider-thumb { width:16px; height:16px; margin-top:-6px; appearance:none; -webkit-appearance:none; background:var(--gold); border:3px solid var(--card); border-radius:50%; box-shadow:0 1px 4px rgba(62,46,33,.22); }
+  .size-control-scale { display:flex; justify-content:space-between; margin-top:2px; color:var(--muted); font-size:10px; letter-spacing:.06em; text-transform:uppercase; }
+  .price-list-editor { display:flex; flex-direction:column; gap:12px; margin-top:16px; }
+  .price-category { padding:14px; background:rgba(247,241,232,.72); border:1px solid #E3D5C3; border-radius:12px; }
+  .price-category-head { display:flex; align-items:flex-end; gap:8px; }
+  .price-category-head > div { flex:1; }
+  .price-category-head label { margin-top:0; }
+  .price-service { display:grid; grid-template-columns:minmax(0,1fr) 92px 34px; gap:7px; margin-top:9px; }
+  .price-service input[type=text] { min-width:0; }
+  .editor-action { width:100%; margin-top:10px; padding:9px 12px; border:1px solid #DCCBB4; border-radius:10px; background:var(--card); color:var(--brown); font:500 12px 'Mont',sans-serif; letter-spacing:.05em; text-transform:uppercase; cursor:pointer; }
+  .editor-action.primary { margin-top:14px; border-color:var(--gold); color:var(--gold); }
+  .icon-action { flex:0 0 34px; width:34px; height:38px; border:1px solid #DCCBB4; border-radius:9px; background:var(--card); color:var(--muted); font:400 20px 'Mont',sans-serif; cursor:pointer; }
+  .price-warning { display:none; margin-top:12px; padding:10px 12px; border:1px solid #C27A62; border-radius:10px; background:#FFF6F1; color:#8B4936; font-size:12px; line-height:1.45; }
+  .price-warning.show { display:block; }
+  .dl:disabled { opacity:.46; cursor:not-allowed; }
   .dl { width:100%; margin-top:22px; background:var(--brown); border:none; border-radius:999px; color:#FAF6F0; font-family:'Mont',sans-serif; font-weight:500; letter-spacing:0.08em; text-transform:uppercase; font-size:14px; padding:15px; cursor:pointer; }
   .dl:hover { filter:brightness(1.15); }
   .preview { flex:1 1 340px; display:flex; flex-direction:column; align-items:center; gap:12px; }
@@ -65,6 +84,7 @@
     <div class="toggle" id="tpl">
       <button data-t="offerta" class="active">Offerta</button>
       <button data-t="listino">Listino</button>
+      <button data-t="listinoprezzi">Listino prezzi</button>
       <button data-t="pd">Prima/Dopo</button>
       <button data-t="risultato">Risultato</button>
       <button data-t="newpost">New Post</button>
@@ -115,14 +135,27 @@
       <input type="text" id="l_cta" value="Scrivimi in DM per prenotare">
     </div>
 
+    <div id="fieldsListinoPrezzi" class="hidden">
+      <label>Riga in alto</label>
+      <input type="text" id="lp_eyebrow" value="NS LASH & NAILS">
+      <label>Titolo</label>
+      <input type="text" id="lp_title" value="Listino prezzi">
+      <div id="priceListCategories" class="price-list-editor"></div>
+      <button type="button" class="editor-action primary" id="addPriceCategory">+ Aggiungi categoria</button>
+      <label>Call to action</label>
+      <input type="text" id="lp_cta" value="Scrivimi in DM per prenotare">
+      <div class="price-warning" id="priceListWarning" role="status"></div>
+    </div>
+
     <div id="fieldsPd" class="hidden">
       <label>Riga in alto</label>
       <input type="text" id="p_eyebrow" value="RISULTATI REALI">
       <label>Titolo</label>
       <input type="text" id="p_title" value="Laminazione ciglia">
-      <div class="zoomrow show" id="rowBoxH">
-        <span>altezza riquadri</span>
-        <input type="range" id="p_boxH" min="1.78" max="3" step="0.01" value="1.78">
+      <div class="size-control" id="rowBoxH">
+        <label for="p_boxH">Altezza foto</label>
+        <input type="range" id="p_boxH" min="0" max="100" step="1" value="80" aria-label="Altezza foto">
+        <div class="size-control-scale"><span>Più compatte</span><span>Più alte</span></div>
       </div>
       <label>Foto PRIMA</label>
       <div class="filebox" id="boxPrima">tocca per caricare la foto<input type="file" id="imgPrima" accept="image/*"></div>
@@ -211,7 +244,7 @@
 
   <div class="preview">
     <canvas id="cv" width="1080" height="1350"></canvas>
-    <div class="hint">Prima/Dopo: trascina la foto nel riquadro per spostarla, usa lo slider per lo zoom. Campo vuoto = elemento nascosto.</div>
+    <div class="hint" id="previewHint">Prima/Dopo: trascina la foto nel riquadro per spostarla, usa lo slider per lo zoom. Campo vuoto = elemento nascosto.</div>
   </div>
 </div>
 
@@ -221,8 +254,31 @@ const ctx = cv.getContext('2d');
 let format = 'feed', template = 'offerta';
 let photoPrima = null, photoDopo = null, photoRis = null;
 let coverIcon = 'chat';
-// Rapporto larghezza/altezza dei riquadri Prima/Dopo: 1.78 = 16:9 (default), fino a 3 = piatto.
-let pdBoxAspect = 16/9;
+let priceListNextId = 13;
+let priceListCategories = [
+  {
+    id: 1,
+    name: 'Unghie',
+    items: [
+      { id: 2, name: 'Semipermanente', price: '€25' },
+      { id: 3, name: 'Semipermanente rinforzato', price: '€30' },
+      { id: 4, name: 'Ricostruzione gel', price: 'da €45' },
+      { id: 5, name: 'Refill', price: '€35' },
+    ],
+  },
+  {
+    id: 6,
+    name: 'Ciglia & sopracciglia',
+    items: [
+      { id: 7, name: 'Laminazione ciglia', price: '€30' },
+      { id: 8, name: 'Laminazione sopracciglia', price: '€25' },
+      { id: 9, name: 'Combo laminazione', price: '€50' },
+      { id: 10, name: 'Definizione sopracciglia', price: '€12' },
+    ],
+  },
+];
+// Altezza relativa dei riquadri Prima/Dopo: 0 = compatta, 1 = massima disponibile.
+let pdBoxHeight = 0.8;
 // Per-photo transform: zoom (scala aggiuntiva) e offset normalizzato (-1..1) rispetto al box.
 const tf = {
   prima: { zoom: 1, ox: 0, oy: 0 },
@@ -701,16 +757,215 @@ function drawListino(W, H) {
   drawFooter(W, s.foot);
 }
 
+function computePriceListLayout({ availableH, itemCounts }) {
+  const categoryCount = itemCounts.length;
+  const itemCount = itemCounts.reduce((sum, count) => sum + count, 0);
+  const base = {
+    categoryH: 54,
+    rowH: 72,
+    categoryGap: 48,
+    categoryFont: 34,
+    itemFont: 31,
+  };
+  const naturalH = categoryCount * base.categoryH
+    + itemCount * base.rowH
+    + Math.max(0, categoryCount - 1) * base.categoryGap;
+  const minScale = 0.72;
+  const scale = naturalH > 0
+    ? Math.max(minScale, Math.min(1, availableH / naturalH))
+    : 1;
+  const scaled = value => value * scale;
+  const contentH = naturalH * scale;
+
+  return {
+    scale,
+    categoryH: scaled(base.categoryH),
+    rowH: scaled(base.rowH),
+    categoryGap: scaled(base.categoryGap),
+    categoryFont: Math.round(scaled(base.categoryFont)),
+    itemFont: Math.round(scaled(base.itemFont)),
+    contentH,
+    overflow: contentH > availableH + 0.5,
+  };
+}
+
+function drawPriceList(W, H) {
+  const categories = priceListCategories
+    .map(category => ({
+      ...category,
+      name: category.name.trim(),
+      items: category.items.filter(item => item.name.trim() || item.price.trim()),
+    }))
+    .filter(category => category.name || category.items.length);
+  const eyebrow = $('lp_eyebrow').trim();
+  const title = $('lp_title').trim();
+  const cta = $('lp_cta').trim();
+  const listTop = 455;
+  const listBottom = cta ? 1570 : 1690;
+  const layout = computePriceListLayout({
+    availableH: listBottom - listTop,
+    itemCounts: categories.map(category => category.items.length),
+  });
+  const warning = document.getElementById('priceListWarning');
+  const download = document.getElementById('download');
+  const hasItems = categories.some(category => category.items.length);
+
+  lashMotif(W/2, 132, 120);
+  if (eyebrow) centerText(eyebrow.toUpperCase(), 232, '500 28px Mont', COL.gold, 11);
+  if (title) {
+    const T = title.toUpperCase();
+    const size = fitFont(T, '300', 76, 920, 10);
+    centerText(T, 334, '300 '+size+'px Mont', COL.brown, 10);
+  }
+  hairline(W, 398, 90);
+
+  let y = listTop + Math.max(0, (listBottom - listTop - layout.contentH) / 2);
+  categories.forEach((category, categoryIndex) => {
+    const heading = category.name.toUpperCase();
+    let headingSize = layout.categoryFont;
+    ctx.font = '600 '+headingSize+'px Mont';
+    while (ctx.measureText(heading).width > 880 && headingSize > 22) {
+      headingSize -= 1;
+      ctx.font = '600 '+headingSize+'px Mont';
+    }
+    ctx.fillStyle = COL.gold;
+    ctx.fillText(heading, 90, y + headingSize);
+    ctx.strokeStyle = 'rgba(176,133,74,.38)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(90, y + layout.categoryH - 5);
+    ctx.lineTo(W - 90, y + layout.categoryH - 5);
+    ctx.stroke();
+    y += layout.categoryH;
+
+    category.items.forEach(item => {
+      const price = item.price.trim();
+      const service = item.name.trim();
+      ctx.font = '500 '+layout.itemFont+'px Mont';
+      const priceW = price ? ctx.measureText(price).width : 0;
+      let serviceSize = layout.itemFont;
+      ctx.font = '400 '+serviceSize+'px Mont';
+      const serviceMaxW = 810 - priceW;
+      while (ctx.measureText(service).width > serviceMaxW && serviceSize > 18) {
+        serviceSize -= 1;
+        ctx.font = '400 '+serviceSize+'px Mont';
+      }
+      const baseline = y + layout.rowH * 0.58;
+      ctx.fillStyle = COL.brown;
+      if (service) ctx.fillText(service, 90, baseline);
+      if (price) {
+        ctx.font = '500 '+layout.itemFont+'px Mont';
+        ctx.fillStyle = COL.gold;
+        ctx.fillText(price, W - 90 - priceW, baseline);
+      }
+      ctx.strokeStyle = 'rgba(158,136,113,.22)';
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(90, y + layout.rowH - 8);
+      ctx.lineTo(W - 90, y + layout.rowH - 8);
+      ctx.stroke();
+      y += layout.rowH;
+    });
+
+    if (categoryIndex < categories.length - 1) y += layout.categoryGap;
+  });
+
+  if (cta) {
+    const T = cta.toUpperCase();
+    const size = fitFont(T, '500', 28, 670, 4);
+    ctx.font = '500 '+size+'px Mont';
+    const tw = trackWidth(T, 4);
+    const buttonW = Math.max(520, Math.min(760, tw + 110));
+    const buttonH = 82;
+    const buttonX = (W - buttonW) / 2;
+    const buttonY = 1626;
+    ctx.fillStyle = COL.brown;
+    ctx.beginPath();
+    ctx.roundRect(buttonX, buttonY, buttonW, buttonH, buttonH/2);
+    ctx.fill();
+    ctx.fillStyle = COL.cream;
+    let tx = (W - tw) / 2;
+    [...T].forEach(ch => {
+      ctx.fillText(ch, tx, buttonY + buttonH/2 + size*0.34);
+      tx += ctx.measureText(ch).width + 4;
+    });
+  }
+  drawFooter(W, 1832);
+
+  const invalid = !hasItems;
+  warning.classList.toggle('show', layout.overflow || invalid);
+  warning.textContent = invalid
+    ? 'Aggiungi almeno un servizio con il relativo prezzo.'
+    : layout.overflow
+      ? 'Troppi servizi per una Story leggibile: rimuovi qualche voce o accorcia i testi.'
+      : '';
+  download.disabled = layout.overflow || invalid;
+}
+
+function computePdPhotoLayout({
+  W, H, topBlock, bottomBlock, sideMargin, labelH, sectionGap, afterPhotos, height,
+  freeTopShare = 0.45, freeMiddleShare = 0.35, freeBottomShare = 0,
+}) {
+  const boxW = W - sideMargin*2;
+  const availableH = Math.max(1, H - topBlock - bottomBlock);
+  const maxPhotoH = Math.max(1, Math.floor((availableH - labelH*2 - sectionGap) / 2));
+  const compactPhotoH = Math.min(maxPhotoH, Math.max(1, Math.floor(boxW / 3.2)));
+  const heightAmount = Math.max(0, Math.min(1, height));
+  const photoH = Math.round(compactPhotoH + (maxPhotoH - compactPhotoH) * heightAmount);
+  const groupH = (labelH + photoH)*2 + sectionGap;
+  const freeH = Math.max(0, availableH - groupH);
+  // Quando le foto si riducono, usa lo spazio extra soprattutto sopra e fra
+  // i due blocchi: entrambe le label scendono e il ritmo resta intenzionale.
+  const firstLabelY = topBlock + freeH * freeTopShare;
+  const firstPhotoY = firstLabelY + labelH;
+  const secondLabelY = firstPhotoY + photoH + sectionGap + freeH * freeMiddleShare;
+  const secondPhotoY = secondLabelY + labelH;
+  const contentY = secondPhotoY + photoH + afterPhotos + freeH * freeBottomShare;
+  return { boxW, photoH, firstLabelY, firstPhotoY, secondLabelY, secondPhotoY, contentY };
+}
+
+function computePdHeaderTop({ feed, height }) {
+  if (!feed) return 90;
+  const heightAmount = Math.max(0, Math.min(1, height));
+  return Math.round(120 - heightAmount * 48);
+}
+
+function computePdChipRect({ boxX, boxY, boxW, boxH, labelW, padX, height, rightInset }) {
+  const w = Math.ceil(labelW + padX*2);
+  return {
+    x: boxX + boxW - rightInset - w,
+    y: boxY + boxH - height/2,
+    w,
+    h: height,
+  };
+}
+
+function computePdSpacing(feed) {
+  return feed
+    ? {
+        top:42, afterEyebrow:38, afterTitle:24,
+        labelH:0, sectionGap:56, afterBoxes:76,
+        afterLine1:34, afterLine2:38, lastH:34, footPad:40,
+        chipHeight:40, chipPadX:20, chipRightInset:48,
+        freeTopShare:0.45, freeMiddleShare:0.35, freeBottomShare:0,
+      }
+    : {
+        top:90, afterEyebrow:48, afterTitle:42,
+        labelH:0, sectionGap:64, afterBoxes:88,
+        afterLine1:45, afterLine2:48, lastH:40, footPad:82,
+        chipHeight:44, chipPadX:22, chipRightInset:48,
+        freeTopShare:0.30, freeMiddleShare:0.40, freeBottomShare:0.30,
+      };
+}
+
 function drawPd(W, H) {
   // Layout fluido a cursore verticale: ogni elemento presente avanza `y`,
   // gli elementi vuoti non lasciano buchi. Il footer resta ancorato in basso.
   const feed = format === 'feed';
   const radius = 28;
 
-  // Spaziature verticali (feed piu' compatto della story).
-  const GAP = feed
-    ? { top:70, afterEyebrow:52, afterTitle:44, boxGap:40, afterBoxes:52, afterLine1:46, afterLine2:56, footPad:52 }
-    : { top:180, afterEyebrow:74, afterTitle:90, boxGap:60, afterBoxes:90, afterLine1:60, afterLine2:80, footPad:110 };
+  // Le chip sono ancorate alle foto, quindi non riservano più una riga sopra.
+  const GAP = computePdSpacing(feed);
 
   // --- Pre-misura l'altezza dei testi per dimensionare i box in modo che entri tutto ---
   const ebTxt = $('p_eyebrow');
@@ -719,33 +974,37 @@ function drawPd(W, H) {
   if (tTxt) { const startT = feed ? 60 : 80; ctx.font = '300 '+startT+'px Mont'; titleSz = fitFont(tTxt.toUpperCase(),'300',startT,940,10); }
   const l1Txt = $('p_line1'), l2Txt = $('p_line2'), lastTxt = $('p_last');
 
-  const topBlock = GAP.top
+  // Nel Feed l'header acquista più respiro e segue la compattezza delle foto.
+  // La Story conserva le coordinate esistenti.
+  const headerTop = feed
+    ? computePdHeaderTop({ feed, height: pdBoxHeight })
+    : GAP.top;
+
+  const topBlock = headerTop
     + (ebTxt ? GAP.afterEyebrow : 0)
     + (tTxt ? titleSz*0.5 + GAP.afterTitle : 0);
   const bottomBlock = GAP.afterBoxes
     + (l1Txt ? GAP.afterLine1 : 0)
     + (l2Txt ? GAP.afterLine2 : 0)
-    + (lastTxt ? (feed ? 42 : 50) : 0)
+    + (lastTxt ? GAP.lastH : 0)
     + GAP.footPad + 40; // spazio footer
 
-  // Altezza disponibile per i due box + gap fra loro.
-  const avail = H - topBlock - bottomBlock;
-  // Larghezza fissa: box con margine laterale che dà respiro (~5.5% della larghezza).
-  const sideMargin = 60;
-  const boxW = W - sideMargin*2;
-  // Altezza dei riquadri: rapportata allo slider "Altezza riquadri" (1.78=16:9 .. 3=piatto).
-  // Se non entra viene comunque limitata dallo spazio disponibile.
-  const idealH = boxW / pdBoxAspect;
-  const maxBoxH = (avail - GAP.boxGap) / 2;
-  const boxH = Math.round(Math.min(idealH, maxBoxH));
+  const sideMargin = 45;
+  const layout = computePdPhotoLayout({
+    W, H, topBlock, bottomBlock, sideMargin,
+    labelH: GAP.labelH,
+    sectionGap: GAP.sectionGap,
+    afterPhotos: GAP.afterBoxes,
+    height: pdBoxHeight,
+    freeTopShare: GAP.freeTopShare,
+    freeMiddleShare: GAP.freeMiddleShare,
+    freeBottomShare: GAP.freeBottomShare,
+  });
+  const boxW = layout.boxW;
+  const boxH = layout.photoH;
   const x0 = sideMargin;
-  // Spaziatura adattiva: lo spazio libero attorno ai box viene distribuito fra
-  // margine sopra, gap centrale e margine sotto in modo proporzionale, cosi' quando
-  // i riquadri si abbassano le distanze restano equilibrate (gap limitato per non esagerare).
-  const leftover = Math.max(0, avail - boxH*2);
-  const vgap = Math.round(Math.max(GAP.boxGap, Math.min(GAP.boxGap * 2.5, leftover / 3)));
 
-  let y = GAP.top;
+  let y = headerTop;
 
   if (ebTxt) {
     centerText(ebTxt.toUpperCase(), y, '500 '+(feed?28:32)+'px Mont', COL.gold, 12);
@@ -757,17 +1016,16 @@ function drawPd(W, H) {
     y += titleSz*0.5 + GAP.afterTitle;
   }
 
-  // Due box orizzontali impilati (PRIMA sopra, DOPO sotto), centrati nello spazio.
-  const boxesH = boxH*2 + vgap;
-  const extra = Math.max(0, avail - boxesH);
-  const boxYStart = y + extra/2;
+  // Le chip sono agganciate alla linea inferiore delle foto in entrambi i formati.
   const items = [
-    { key:'prima', label:'PRIMA', img: photoPrima, hot:false },
-    { key:'dopo',  label:'DOPO',  img: photoDopo,  hot:true  },
+    { key:'prima', label:'PRIMA', img: photoPrima, hot:false, photoY:layout.firstPhotoY },
+    { key:'dopo',  label:'DOPO',  img: photoDopo,  hot:true,  photoY:layout.secondPhotoY },
   ];
   pdRects = {};
-  items.forEach((it, i) => {
-    const bx = x0, by = boxYStart + i*(boxH+vgap);
+  items.forEach(it => {
+    const bx = x0, by = it.photoY;
+    const labelFont = '500 '+(feed?21:23)+'px Mont';
+
     pdRects[it.key] = { x:bx, y:by, w:boxW, h:boxH };
     ctx.fillStyle = COL.boxFill;
     ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, radius); ctx.fill();
@@ -785,16 +1043,36 @@ function drawPd(W, H) {
     ctx.strokeStyle = it.hot ? COL.gold : COL.muted;
     ctx.lineWidth = 4;
     ctx.beginPath(); ctx.roundRect(bx, by, boxW, boxH, radius); ctx.stroke();
-    ctx.font = '600 36px Mont';
-    const lw = ctx.measureText(it.label).width;
-    const tagW = lw+64, tagH = 64;
-    const tx = bx+28, ty = by+22;
-    ctx.fillStyle = it.hot ? COL.gold : '#D9C9B2';
-    ctx.beginPath(); ctx.roundRect(tx, ty, tagW, tagH, tagH/2); ctx.fill();
-    ctx.fillStyle = it.hot ? '#FFF' : COL.brown;
-    ctx.fillText(it.label, tx+32, ty+45);
+
+    const tracking = feed ? 4 : 5;
+    ctx.font = labelFont;
+    const chip = computePdChipRect({
+      boxX: bx,
+      boxY: by,
+      boxW,
+      boxH,
+      labelW: trackWidth(it.label, tracking),
+      padX: GAP.chipPadX,
+      height: GAP.chipHeight,
+      rightInset: GAP.chipRightInset,
+    });
+    ctx.fillStyle = it.hot ? COL.gold : COL.cream;
+    ctx.beginPath();
+    ctx.roundRect(chip.x, chip.y, chip.w, chip.h, feed?11:12);
+    ctx.fill();
+    if (!it.hot) {
+      ctx.strokeStyle = COL.goldSoft;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
+    ctx.fillStyle = it.hot ? COL.cream : COL.muted;
+    let tx = chip.x + GAP.chipPadX;
+    [...it.label].forEach(ch => {
+      ctx.fillText(ch, tx, chip.y + (feed?27:30));
+      tx += ctx.measureText(ch).width + tracking;
+    });
   });
-  y = boxYStart + items.length*boxH + (items.length-1)*vgap + GAP.afterBoxes;
+  y = layout.contentY;
 
   if (l1Txt) {
     const sz = fitFont(l1Txt,'400',feed?32:38,960,0);
@@ -954,10 +1232,16 @@ function draw() {
   const W = 1080;
   const H = template==='cover' ? 1080 : (format==='feed' ? 1350 : 1920);
   cv.width = W; cv.height = H;
+  if (template !== 'listinoprezzi') {
+    document.getElementById('priceListWarning').classList.remove('show');
+    document.getElementById('priceListWarning').textContent = '';
+    document.getElementById('download').disabled = false;
+  }
   if (template === 'cover') { drawCover(W, H); return; }
   bg(W, H);
   if (template === 'offerta') drawOfferta(W, H);
   else if (template === 'listino') drawListino(W, H);
+  else if (template === 'listinoprezzi') drawPriceList(W, H);
   else if (template === 'newpost') drawNewPost(W, H);
   else if (template === 'risultato') drawRisultato(W, H);
   else drawPd(W, H);
@@ -972,22 +1256,137 @@ document.querySelectorAll('#tpl button').forEach(b => b.addEventListener('click'
   b.classList.add('active'); template = b.dataset.t;
   document.getElementById('fieldsOfferta').classList.toggle('hidden', template!=='offerta');
   document.getElementById('fieldsListino').classList.toggle('hidden', template!=='listino');
+  document.getElementById('fieldsListinoPrezzi').classList.toggle('hidden', template!=='listinoprezzi');
   document.getElementById('fieldsPd').classList.toggle('hidden', template!=='pd');
   document.getElementById('fieldsRisultato').classList.toggle('hidden', template!=='risultato');
   document.getElementById('fieldsNewPost').classList.toggle('hidden', template!=='newpost');
   document.getElementById('fieldsCover').classList.toggle('hidden', template!=='cover');
   document.getElementById('footerField').classList.toggle('hidden', template==='cover');
-  // Il selettore formato non serve per le copertine (formato fisso 1080x1080).
-  document.getElementById('fmtField').classList.toggle('hidden', template==='cover');
-  if ((template === 'listino' || template === 'newpost') && format === 'feed') {
+  // Il selettore formato non serve per i template con formato fisso.
+  document.getElementById('fmtField').classList.toggle('hidden', template==='cover' || template==='listinoprezzi');
+  if (template === 'listinoprezzi' || ((template === 'listino' || template === 'newpost') && format === 'feed')) {
     document.querySelectorAll('#fmt button').forEach(x=>x.classList.remove('active'));
     document.querySelector('#fmt button[data-f=story]').classList.add('active');
     format = 'story';
   }
+  document.getElementById('previewHint').textContent = template === 'listinoprezzi'
+    ? 'Listino prezzi: aggiungi categorie e servizi dal pannello. Il download si blocca se il contenuto non entra in modo leggibile.'
+    : 'Prima/Dopo: trascina la foto nel riquadro per spostarla, usa lo slider per lo zoom. Campo vuoto = elemento nascosto.';
   draw();
 }));
 document.getElementById('cv_icon').addEventListener('change', e => { coverIcon = e.target.value; draw(); });
 document.querySelectorAll('input[type=text]').forEach(i => i.addEventListener('input', draw));
+
+function renderPriceListEditor() {
+  const editor = document.getElementById('priceListCategories');
+  editor.replaceChildren();
+
+  priceListCategories.forEach(category => {
+    const section = document.createElement('section');
+    section.className = 'price-category';
+
+    const head = document.createElement('div');
+    head.className = 'price-category-head';
+    const field = document.createElement('div');
+    const label = document.createElement('label');
+    label.textContent = 'Categoria';
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = category.name;
+    input.dataset.categoryId = category.id;
+    input.dataset.field = 'category';
+    const removeCategory = document.createElement('button');
+    removeCategory.type = 'button';
+    removeCategory.className = 'icon-action';
+    removeCategory.textContent = '×';
+    removeCategory.dataset.action = 'remove-category';
+    removeCategory.dataset.categoryId = category.id;
+    removeCategory.setAttribute('aria-label', 'Rimuovi categoria '+category.name);
+    field.append(label, input);
+    head.append(field, removeCategory);
+    section.append(head);
+
+    category.items.forEach(item => {
+      const row = document.createElement('div');
+      row.className = 'price-service';
+      const service = document.createElement('input');
+      service.type = 'text';
+      service.value = item.name;
+      service.placeholder = 'Servizio';
+      service.setAttribute('aria-label', 'Nome servizio');
+      service.dataset.categoryId = category.id;
+      service.dataset.itemId = item.id;
+      service.dataset.field = 'name';
+      const price = document.createElement('input');
+      price.type = 'text';
+      price.value = item.price;
+      price.placeholder = '€';
+      price.setAttribute('aria-label', 'Prezzo');
+      price.dataset.categoryId = category.id;
+      price.dataset.itemId = item.id;
+      price.dataset.field = 'price';
+      const removeItem = document.createElement('button');
+      removeItem.type = 'button';
+      removeItem.className = 'icon-action';
+      removeItem.textContent = '×';
+      removeItem.dataset.action = 'remove-item';
+      removeItem.dataset.categoryId = category.id;
+      removeItem.dataset.itemId = item.id;
+      removeItem.setAttribute('aria-label', 'Rimuovi servizio '+item.name);
+      row.append(service, price, removeItem);
+      section.append(row);
+    });
+
+    const addItem = document.createElement('button');
+    addItem.type = 'button';
+    addItem.className = 'editor-action';
+    addItem.textContent = '+ Aggiungi servizio';
+    addItem.dataset.action = 'add-item';
+    addItem.dataset.categoryId = category.id;
+    section.append(addItem);
+    editor.append(section);
+  });
+}
+
+document.getElementById('priceListCategories').addEventListener('input', event => {
+  const categoryId = Number(event.target.dataset.categoryId);
+  const category = priceListCategories.find(item => item.id === categoryId);
+  if (!category) return;
+  if (event.target.dataset.field === 'category') category.name = event.target.value;
+  else {
+    const itemId = Number(event.target.dataset.itemId);
+    const item = category.items.find(entry => entry.id === itemId);
+    if (item) item[event.target.dataset.field] = event.target.value;
+  }
+  draw();
+});
+
+document.getElementById('priceListCategories').addEventListener('click', event => {
+  const action = event.target.dataset.action;
+  if (!action) return;
+  const categoryId = Number(event.target.dataset.categoryId);
+  const category = priceListCategories.find(item => item.id === categoryId);
+  if (action === 'add-item' && category) {
+    category.items.push({ id: priceListNextId++, name: 'Nuovo servizio', price: '€0' });
+  } else if (action === 'remove-item' && category) {
+    const itemId = Number(event.target.dataset.itemId);
+    category.items = category.items.filter(item => item.id !== itemId);
+  } else if (action === 'remove-category') {
+    priceListCategories = priceListCategories.filter(item => item.id !== categoryId);
+  }
+  renderPriceListEditor();
+  draw();
+});
+
+document.getElementById('addPriceCategory').addEventListener('click', () => {
+  priceListCategories.push({
+    id: priceListNextId++,
+    name: 'Nuova categoria',
+    items: [{ id: priceListNextId++, name: 'Nuovo servizio', price: '€0' }],
+  });
+  renderPriceListEditor();
+  draw();
+});
 
 function hookUpload(boxId, inputId, setter, zoomRowId) {
   const box = document.getElementById(boxId);
@@ -1015,7 +1414,10 @@ hookUpload('boxRis','imgRis', img => photoRis = img, 'zoomRis');
 document.getElementById('zPrima').addEventListener('input', e => { tf.prima.zoom = parseFloat(e.target.value); draw(); });
 document.getElementById('zDopo').addEventListener('input', e => { tf.dopo.zoom = parseFloat(e.target.value); draw(); });
 document.getElementById('zRis').addEventListener('input', e => { tf.ris.zoom = parseFloat(e.target.value); draw(); });
-document.getElementById('p_boxH').addEventListener('input', e => { pdBoxAspect = parseFloat(e.target.value); draw(); });
+document.getElementById('p_boxH').addEventListener('input', e => {
+  pdBoxHeight = parseFloat(e.target.value) / 100;
+  draw();
+});
 
 // Drag della foto dentro il box (Prima/Dopo): sposta l'offset normalizzato.
 let dragKey = null, dragStart = null;
@@ -1101,6 +1503,7 @@ if ('serviceWorker' in navigator) {
 }
 
 if (document.fonts && document.fonts.ready) document.fonts.ready.then(draw);
+renderPriceListEditor();
 draw();
 setTimeout(draw, 500);
 </script>

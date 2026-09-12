@@ -48,14 +48,16 @@ Template attuali:
 |-------------|-------------------|-----------------|------|
 | `offerta`   | `fieldsOfferta`   | `drawOfferta`   | promo con prezzo barrato |
 | `listino`   | `fieldsListino`   | `drawListino`   | forza formato Story |
+| `listinoprezzi` | `fieldsListinoPrezzi` | `drawPriceList` | Story fissa; categorie e servizi dinamici, layout adattivo con blocco download in overflow |
 | `pd`        | `fieldsPd`        | `drawPd`        | Prima/Dopo, foto 16:9 impilate, drag+zoom, layout fluido a cursore Y |
 | `risultato` | `fieldsRisultato` | `drawRisultato` | box unico 16:9 col risultato finale, drag+zoom, blocco centrato verticalmente |
 | `newpost`   | `fieldsNewPost`   | `drawNewPost`   | forza Story; texture "new post" in corsivo (SERIF) + riquadro con corner marks + titolo oro bold sopra il box |
 | `cover`     | `fieldsCover`     | `drawCover`     | formato fisso 1080×1080; copertina highlight: solo icona centrata nel cerchio IG; sfondo chiaro fisso, 26 icone via dropdown |
 
 L'handler dei tab (`#tpl button` click) fa il toggle delle classi `.active` e `.hidden`,
-setta `template`, e forza `format='story'` per `listino` e `newpost`. Per `cover`
+setta `template`, e forza `format='story'` per `listino`, `listinoprezzi` e `newpost`. Per `cover`
 nasconde `#footerField` e `#fmtField` (formato fisso 1080×1080, niente footer).
+`listinoprezzi` nasconde solo `#fmtField`: usa sempre Story e mantiene il footer configurabile.
 
 ### Copertine highlight (`cover`)
 - Formato **1080×1080** (deciso in `draw()`, non usa il toggle formato).
